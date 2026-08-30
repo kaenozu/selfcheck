@@ -3,15 +3,15 @@ import '../../domain/comparison_result.dart';
 
 /// Color scheme for comparison labels
 class LabelColors {
-  static const veryCheap = Color(0xFF1B5E20);       // Dark green
-  static const veryCheapBg = Color(0xFFE8F5E9);     // Light green
-  static const cheap = Color(0xFF2E7D32);           // Green
+  static const veryCheap = Color(0xFF1B5E20); // Dark green
+  static const veryCheapBg = Color(0xFFE8F5E9); // Light green
+  static const cheap = Color(0xFF2E7D32); // Green
   static const cheapBg = Color(0xFFE8F5E9);
-  static const normal = Color(0xFF424242);           // Gray
-  static const normalBg = Color(0xFFF5F5F5);        // Light gray
+  static const normal = Color(0xFF424242); // Gray
+  static const normalBg = Color(0xFFF5F5F5); // Light gray
   static const slightlyExpensive = Color(0xFFE65100); // Orange
   static const slightlyExpensiveBg = Color(0xFFFFF3E0);
-  static const expensive = Color(0xFFB71C1C);        // Red
+  static const expensive = Color(0xFFB71C1C); // Red
   static const expensiveBg = Color(0xFFFFEBEE);
 
   static Color forLabel(ComparisonLabel? label) {
@@ -166,10 +166,7 @@ class ResultCard extends StatelessWidget {
         children: [
           Text(
             '¥${result.currentPrice}',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
           ),
           if (result.label != null) ...[
             const SizedBox(height: 4),
@@ -197,18 +194,13 @@ class ResultCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-      ),
+      decoration: BoxDecoration(color: Colors.grey.shade50),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             '自分値: ¥${result.baselineMedianYen}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           const SizedBox(width: 16),
           Text(
@@ -231,16 +223,10 @@ class ResultCard extends StatelessWidget {
         children: [
           Text(
             '${result.observationCount}件の履歴',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           const Spacer(),
-          TextButton(
-            onPressed: onDismiss,
-            child: const Text('閉じる'),
-          ),
+          TextButton(onPressed: onDismiss, child: const Text('閉じる')),
           const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: onScanAgain,

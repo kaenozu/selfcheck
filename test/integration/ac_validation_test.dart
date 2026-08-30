@@ -56,7 +56,9 @@ void main() {
     test('CompareUseCase processes a complete scan in under 3s', () async {
       // Simulate the full compare pipeline that would run after
       // barcode + price are both detected and stable
-      final product = await repository.createProvisionalProduct('4901234567890');
+      final product = await repository.createProvisionalProduct(
+        '4901234567890',
+      );
 
       final stopwatch = Stopwatch()..start();
 
@@ -74,35 +76,38 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(3000));
     });
 
-    test('full pipeline: barcode→product→observe→compare completes fast', () async {
-      final stopwatch = Stopwatch()..start();
+    test(
+      'full pipeline: barcode→product→observe→compare completes fast',
+      () async {
+        final stopwatch = Stopwatch()..start();
 
-      // Simulate what ScanCoordinator._compare does
-      var product = await repository.findProductByJan('4901234567890');
-      product ??= await repository.createProvisionalProduct('4901234567890');
+        // Simulate what ScanCoordinator._compare does
+        var product = await repository.findProductByJan('4901234567890');
+        product ??= await repository.createProvisionalProduct('4901234567890');
 
-      await repository.insertObservation(
-        productId: product.id,
-        priceYen: 398,
-        priceConfidence: 0.9,
-      );
+        await repository.insertObservation(
+          productId: product.id,
+          priceYen: 398,
+          priceConfidence: 0.9,
+        );
 
-      final since = DateTime.now().subtract(const Duration(days: 180));
-      final observations = await repository.getValidObservations(
-        productId: product.id,
-        since: since,
-        limit: 12,
-      );
+        final since = DateTime.now().subtract(const Duration(days: 180));
+        final observations = await repository.getValidObservations(
+          productId: product.id,
+          since: since,
+          limit: 12,
+        );
 
-      final prices = observations.map((o) => o.priceYen).toList()..sort();
-      final median = prices.isEmpty ? null : prices[prices.length ~/ 2];
+        final prices = observations.map((o) => o.priceYen).toList()..sort();
+        final median = prices.isEmpty ? null : prices[prices.length ~/ 2];
 
-      stopwatch.stop();
+        stopwatch.stop();
 
-      expect(product.jan, '4901234567890');
-      expect(median, 398); // Only 1 observation
-      expect(stopwatch.elapsedMilliseconds, lessThan(3000));
-    });
+        expect(product.jan, '4901234567890');
+        expect(median, 398); // Only 1 observation
+        expect(stopwatch.elapsedMilliseconds, lessThan(3000));
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -112,7 +117,9 @@ void main() {
   group('AC-02: Barcode-only → SKU identified, price stabilizes → done', () {
     test('barcode-first flow: product created, then compare works', () async {
       // Step 1: Barcode detected → create product (SKU identified)
-      final product = await repository.createProvisionalProduct('4901234567890');
+      final product = await repository.createProvisionalProduct(
+        '4901234567890',
+      );
       expect(product.jan, '4901234567890');
 
       // Step 2: Price stabilizes → compare completes
@@ -130,28 +137,43 @@ void main() {
       final stabilizer = PriceStabilizer();
 
       // Frame 1
-      expect(stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      )), false);
+      expect(
+        stabilizer.submit(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['398'],
+          ),
+        ),
+        false,
+      );
 
       // Frame 2
-      expect(stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      )), false);
+      expect(
+        stabilizer.submit(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['398'],
+          ),
+        ),
+        false,
+      );
 
       // Frame 3 — stable!
-      expect(stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      )), true);
+      expect(
+        stabilizer.submit(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['398'],
+          ),
+        ),
+        true,
+      );
 
       expect(stabilizer.currentPrice, 398);
     });
@@ -170,33 +192,38 @@ void main() {
   // AC-03: 未知JANを読むと文字入力なしで暫定SKUが作成される。
   // ─────────────────────────────────────────────────────────────────
   group('AC-03: Unknown JAN → provisional SKU created without input', () {
-    test('findProductByJan returns null for unknown, createProvisionalProduct succeeds',
-        () async {
-      final unknownJan = '9999999999999';
+    test(
+      'findProductByJan returns null for unknown, createProvisionalProduct succeeds',
+      () async {
+        final unknownJan = '9999999999999';
 
-      final existing = await repository.findProductByJan(unknownJan);
-      expect(existing, isNull);
+        final existing = await repository.findProductByJan(unknownJan);
+        expect(existing, isNull);
 
-      final product = await repository.createProvisionalProduct(unknownJan);
+        final product = await repository.createProvisionalProduct(unknownJan);
 
-      expect(product.jan, unknownJan);
-      expect(product.id, startsWith('prod-'));
-      expect(product.displayName, isNull); // No name input required
+        expect(product.jan, unknownJan);
+        expect(product.id, startsWith('prod-'));
+        expect(product.displayName, isNull); // No name input required
 
-      final found = await repository.findProductByJan(unknownJan);
-      expect(found, isNotNull);
-      expect(found!.jan, unknownJan);
-    });
+        final found = await repository.findProductByJan(unknownJan);
+        expect(found, isNotNull);
+        expect(found!.jan, unknownJan);
+      },
+    );
 
-    test('known JAN returns existing product without creating duplicate', () async {
-      final jan = '4901234567890';
+    test(
+      'known JAN returns existing product without creating duplicate',
+      () async {
+        final jan = '4901234567890';
 
-      final p1 = await repository.createProvisionalProduct(jan);
-      final p2 = await repository.findProductByJan(jan);
+        final p1 = await repository.createProvisionalProduct(jan);
+        final p2 = await repository.findProductByJan(jan);
 
-      expect(p2, isNotNull);
-      expect(p2!.id, p1.id);
-    });
+        expect(p2, isNotNull);
+        expect(p2!.id, p1.id);
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -250,7 +277,11 @@ void main() {
     test('CompareUseCase compares only against same productId', () async {
       final productA = await repository.createProvisionalProduct('JAN_A');
 
-      await insertObservationsSpaced(repository, productId: productA.id, prices: [500, 500, 500, 500, 500]);
+      await insertObservationsSpaced(
+        repository,
+        productId: productA.id,
+        prices: [500, 500, 500, 500, 500],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 400,
@@ -337,25 +368,28 @@ void main() {
       expect(isDup, isFalse);
     });
 
-    test('duplicate detected within 5-min window (same product+price)', () async {
-      final t1 = DateTime(2024, 6, 15, 10, 0, 0);
-      final t2 = DateTime(2024, 6, 15, 10, 4, 59);
+    test(
+      'duplicate detected within 5-min window (same product+price)',
+      () async {
+        final t1 = DateTime(2024, 6, 15, 10, 0, 0);
+        final t2 = DateTime(2024, 6, 15, 10, 4, 59);
 
-      await repository.insertObservationWithDate(
-        productId: 'prod-1',
-        priceYen: 500,
-        priceConfidence: 0.9,
-        observedAt: t1,
-      );
+        await repository.insertObservationWithDate(
+          productId: 'prod-1',
+          priceYen: 500,
+          priceConfidence: 0.9,
+          observedAt: t1,
+        );
 
-      final isDup = await repository.isDuplicate(
-        productId: 'prod-1',
-        priceYen: 500,
-        observedAt: t2,
-      );
+        final isDup = await repository.isDuplicate(
+          productId: 'prod-1',
+          priceYen: 500,
+          observedAt: t2,
+        );
 
-      expect(isDup, isTrue);
-    });
+        expect(isDup, isTrue);
+      },
+    );
 
     test('no duplicate outside 5-min window', () async {
       final t1 = DateTime(2024, 6, 15, 10, 0, 0);
@@ -384,9 +418,15 @@ void main() {
   // ─────────────────────────────────────────────────────────────────
   group('AC-06: Airplane mode - all operations offline', () {
     test('full scan-to-compare flow with no network', () async {
-      final product = await repository.createProvisionalProduct('4901234567890');
+      final product = await repository.createProvisionalProduct(
+        '4901234567890',
+      );
 
-      await insertObservationsSpaced(repository, productId: product.id, prices: [500, 500, 500, 500]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [500, 500, 500, 500],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 480,
@@ -401,7 +441,9 @@ void main() {
     });
 
     test('database operations work without internet', () async {
-      final product = await repository.createProvisionalProduct('4901234567890');
+      final product = await repository.createProvisionalProduct(
+        '4901234567890',
+      );
       expect(product.id, isNotEmpty);
 
       final obs = await repository.insertObservation(
@@ -486,12 +528,14 @@ void main() {
 
       // Price stabilizes without any barcode
       for (var i = 0; i < 3; i++) {
-        priceController.add(PriceCandidate(
-          priceYen: 398,
-          confidence: 0.9,
-          region: const Rect(left: 0, top: 0, right: 200, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        priceController.add(
+          PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: const Rect(left: 0, top: 0, right: 200, bottom: 100),
+            rawTexts: ['398'],
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 20));
       }
 
@@ -518,12 +562,14 @@ void main() {
       coordinator.startScan();
 
       for (var i = 0; i < 3; i++) {
-        priceController.add(PriceCandidate(
-          priceYen: 398,
-          confidence: 0.9,
-          region: const Rect(left: 0, top: 0, right: 200, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        priceController.add(
+          PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: const Rect(left: 0, top: 0, right: 200, bottom: 100),
+            rawTexts: ['398'],
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 10));
       }
 
@@ -571,9 +617,15 @@ void main() {
   // ─────────────────────────────────────────────────────────────────
   group('AC-10: Median calculation with diff/rate/label for 3+ history', () {
     test('median calculated from historical observations', () async {
-      final product = await repository.createProvisionalProduct('4901234567890');
+      final product = await repository.createProvisionalProduct(
+        '4901234567890',
+      );
 
-      await insertObservationsSpaced(repository, productId: product.id, prices: [500, 500, 500, 500, 500]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [500, 500, 500, 500, 500],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 500,
@@ -590,7 +642,11 @@ void main() {
 
     test('veryCheap: -10% or less', () async {
       final product = await repository.createProvisionalProduct('JAN_TEST');
-      await insertObservationsSpaced(repository, productId: product.id, prices: [1000, 1000, 1000]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [1000, 1000, 1000],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 850,
@@ -604,7 +660,11 @@ void main() {
 
     test('cheap: -10% < rate <= -5%', () async {
       final product = await repository.createProvisionalProduct('JAN_TEST');
-      await insertObservationsSpaced(repository, productId: product.id, prices: [1000, 1000, 1000]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [1000, 1000, 1000],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 930,
@@ -617,7 +677,11 @@ void main() {
 
     test('normal: -5% < rate < +5%', () async {
       final product = await repository.createProvisionalProduct('JAN_TEST');
-      await insertObservationsSpaced(repository, productId: product.id, prices: [1000, 1000, 1000]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [1000, 1000, 1000],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 1020,
@@ -630,7 +694,11 @@ void main() {
 
     test('slightlyExpensive: +5% <= rate < +10%', () async {
       final product = await repository.createProvisionalProduct('JAN_TEST');
-      await insertObservationsSpaced(repository, productId: product.id, prices: [1000, 1000, 1000]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [1000, 1000, 1000],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 1070,
@@ -643,7 +711,11 @@ void main() {
 
     test('expensive: +10% or more', () async {
       final product = await repository.createProvisionalProduct('JAN_TEST');
-      await insertObservationsSpaced(repository, productId: product.id, prices: [1000, 1000, 1000]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [1000, 1000, 1000],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 1150,
@@ -706,7 +778,11 @@ void main() {
         observedAt: DateTime.now().subtract(const Duration(days: 200)),
       );
 
-      await insertObservationsSpaced(repository, productId: product.id, prices: [500, 500, 500]);
+      await insertObservationsSpaced(
+        repository,
+        productId: product.id,
+        prices: [500, 500, 500],
+      );
 
       final result = await compareUseCase.compare(
         currentPriceYen: 500,
@@ -745,59 +821,79 @@ void main() {
     test('PriceStabilizer requires 3 consecutive identical readings', () {
       final stabilizer = PriceStabilizer();
 
-      stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      ));
-      stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      ));
-      expect(stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      )), isTrue);
+      stabilizer.submit(
+        const PriceCandidate(
+          priceYen: 398,
+          confidence: 0.9,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          rawTexts: ['398'],
+        ),
+      );
+      stabilizer.submit(
+        const PriceCandidate(
+          priceYen: 398,
+          confidence: 0.9,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          rawTexts: ['398'],
+        ),
+      );
+      expect(
+        stabilizer.submit(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['398'],
+          ),
+        ),
+        isTrue,
+      );
     });
 
     test('PriceStabilizer rejects if readings differ', () {
       final stabilizer = PriceStabilizer();
 
-      stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      ));
-      stabilizer.submit(const PriceCandidate(
-        priceYen: 398,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['398'],
-      ));
-      expect(stabilizer.submit(const PriceCandidate(
-        priceYen: 400,
-        confidence: 0.9,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-        rawTexts: ['400'],
-      )), isFalse);
+      stabilizer.submit(
+        const PriceCandidate(
+          priceYen: 398,
+          confidence: 0.9,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          rawTexts: ['398'],
+        ),
+      );
+      stabilizer.submit(
+        const PriceCandidate(
+          priceYen: 398,
+          confidence: 0.9,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          rawTexts: ['398'],
+        ),
+      );
+      expect(
+        stabilizer.submit(
+          const PriceCandidate(
+            priceYen: 400,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['400'],
+          ),
+        ),
+        isFalse,
+      );
     });
 
     test('PriceStabilizer keeps sliding window of 5', () {
       final stabilizer = PriceStabilizer();
 
       for (final price in [100, 200, 300, 300, 300]) {
-        stabilizer.submit(PriceCandidate(
-          priceYen: price,
-          confidence: 0.9,
-          region: const Rect(left: 0, top: 0, right: 100, bottom: 50),
-          rawTexts: ['$price'],
-        ));
+        stabilizer.submit(
+          PriceCandidate(
+            priceYen: price,
+            confidence: 0.9,
+            region: const Rect(left: 0, top: 0, right: 100, bottom: 50),
+            rawTexts: ['$price'],
+          ),
+        );
       }
 
       expect(stabilizer.currentPrice, 300);
@@ -816,10 +912,13 @@ class _StreamBarcodeAdapter implements BarcodeRecognizerAdapter {
   _StreamBarcodeAdapter(this._stream);
 
   @override
-  Stream<BarcodeCandidate> get results => _stream.map((e) {
+  Stream<BarcodeCandidate> get results => _stream
+      .map((e) {
         if (_paused) return null;
         return e;
-      }).where((e) => e != null).cast<BarcodeCandidate>();
+      })
+      .where((e) => e != null)
+      .cast<BarcodeCandidate>();
 
   @override
   void pause() => _paused = true;
@@ -835,10 +934,13 @@ class _StreamPriceAdapter implements PriceOcrAdapter {
   _StreamPriceAdapter(this._stream);
 
   @override
-  Stream<PriceCandidate> get results => _stream.map((e) {
+  Stream<PriceCandidate> get results => _stream
+      .map((e) {
         if (_paused) return null;
         return e;
-      }).where((e) => e != null).cast<PriceCandidate>();
+      })
+      .where((e) => e != null)
+      .cast<PriceCandidate>();
 
   @override
   void pause() => _paused = true;

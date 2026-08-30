@@ -1,11 +1,11 @@
 /// 自分値比較結果
 class ComparisonResult {
   final int currentPrice;
-  final int? baselineMedianYen;   // 自分値（都度計算）
-  final int? diffYen;            // 差額
-  final double? diffRate;        // 差率
-  final ComparisonLabel? label;  // ラベル
-  final int observationCount;    // 観測数
+  final int? baselineMedianYen; // 自分値（都度計算）
+  final int? diffYen; // 差額
+  final double? diffRate; // 差率
+  final ComparisonLabel? label; // ラベル
+  final int observationCount; // 観測数
   final ComparisonStatus status;
 
   const ComparisonResult({
@@ -74,18 +74,18 @@ class ComparisonResult {
 
 /// 比較ステータス
 enum ComparisonStatus {
-  firstPrice,    // 初回価格（履歴なし）
-  historyShort,  // 履歴不足（3件未満）
-  withBaseline,  // 正常比較
+  firstPrice, // 初回価格（履歴なし）
+  historyShort, // 履歴不足（3件未満）
+  withBaseline, // 正常比較
 }
 
 /// 比較ラベル
 enum ComparisonLabel {
-  veryCheap,  // かなり安い（<= -10%）
-  cheap,      // 安い（-10% < x <= -5%）
-  normal,     // いつも通り（-5% < x < +5%）
+  veryCheap, // かなり安い（<= -10%）
+  cheap, // 安い（-10% < x <= -5%）
+  normal, // いつも通り（-5% < x < +5%）
   slightlyExpensive, // 少し高い（+5% <= x < +10%）
-  expensive,  // 高い（>= +10%）
+  expensive, // 高い（>= +10%）
 }
 
 /// 比較ポリシー
