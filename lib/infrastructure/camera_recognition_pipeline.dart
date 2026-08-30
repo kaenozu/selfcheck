@@ -87,7 +87,9 @@ class CameraRecognitionPipeline extends ChangeNotifier {
         return;
       }
 
-      await controller.startImageStream(_onCameraImage);
+      await controller.startImageStream(
+        (image) => _onCameraImage(image, generation),
+      );
       if (!_isCurrentCameraOperation(generation)) {
         if (identical(_cameraController, controller)) {
           _cameraController = null;
@@ -118,7 +120,6 @@ class CameraRecognitionPipeline extends ChangeNotifier {
     if (_disposed) return;
     _cameraActive = false;
     _cameraGeneration++;
-    _processing = false;
 
     final controller = _cameraController;
     _cameraController = null;
@@ -162,8 +163,10 @@ class CameraRecognitionPipeline extends ChangeNotifier {
   void enablePrice() => _priceEnabled = true;
   void disablePrice() => _priceEnabled = false;
 
-  Future<void> _onCameraImage(CameraImage image) async {
-    if (_disposed || _processing || (!_barcodeEnabled && !_priceEnabled)) {
+  Future<void> _onCameraImage(CameraImage image, int generation) async {
+    if (!_isCurrentCameraOperation(generation) ||
+        _processing ||
+        (!_barcodeEnabled && !_priceEnabled)) {
       return;
     }
 
@@ -175,10 +178,15 @@ class CameraRecognitionPipeline extends ChangeNotifier {
     _processing = true;
     try {
       final inputImage = _toInputImage(image);
-      if (inputImage == null) return;
+      if (inputImage == null || !_isCurrentCameraOperation(generation)) {
+        return;
+      }
 
       if (_barcodeEnabled) {
         final barcodes = await _barcodeScanner.processImage(inputImage);
+        if (!_isCurrentCameraOperation(generation) || !_barcodeEnabled) {
+          return;
+        }
         for (final barcode in barcodes) {
           final candidate = _toBarcodeCandidate(barcode);
           if (candidate != null && !_barcodeResults.isClosed) {
@@ -188,10 +196,13 @@ class CameraRecognitionPipeline extends ChangeNotifier {
         }
       }
 
-      if (_priceEnabled) {
-        final text = await _textRecognizer.processImage(inputImage);
+      if (_priceEnabled && _isCurrentCameraOperation(generation)) {
+        final recognizedText = await _textRecognizer.processImage(inputImage);
+        if (!_isCurrentCameraOperation(generation) || !_priceEnabled) {
+          return;
+        }
         final candidate = parsePriceText(
-          text.blocks.expand(
+          recognizedText.blocks.expand(
             (block) => block.lines.map(
               (line) => (
                 text: line.text,
