@@ -166,7 +166,11 @@ class ResultCard extends StatelessWidget {
         children: [
           Text(
             '¥${result.currentPrice}',
-            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF212121),
+            ),
           ),
           if (result.label != null) ...[
             const SizedBox(height: 4),
