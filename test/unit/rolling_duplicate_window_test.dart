@@ -17,45 +17,51 @@ void main() {
       return (await repository.createProvisionalProduct(jan)).id;
     }
 
-    test('detects a duplicate across a fixed five-minute bucket boundary', () async {
-      final productId = await createProduct('4901234567800');
-      final firstAt = DateTime(2026, 8, 30, 10, 4, 59);
+    test(
+      'detects a duplicate across a fixed five-minute bucket boundary',
+      () async {
+        final productId = await createProduct('4901234567800');
+        final firstAt = DateTime(2026, 8, 30, 10, 4, 59);
 
-      await repository.insertObservationWithDate(
-        productId: productId,
-        priceYen: 500,
-        priceConfidence: 0.95,
-        observedAt: firstAt,
-      );
+        await repository.insertObservationWithDate(
+          productId: productId,
+          priceYen: 500,
+          priceConfidence: 0.95,
+          observedAt: firstAt,
+        );
 
-      final duplicate = await repository.isDuplicate(
-        productId: productId,
-        priceYen: 500,
-        observedAt: DateTime(2026, 8, 30, 10, 5, 1),
-      );
+        final duplicate = await repository.isDuplicate(
+          productId: productId,
+          priceYen: 500,
+          observedAt: DateTime(2026, 8, 30, 10, 5, 1),
+        );
 
-      expect(duplicate, isTrue);
-    });
+        expect(duplicate, isTrue);
+      },
+    );
 
-    test('treats exactly five minutes as inside the duplicate window', () async {
-      final productId = await createProduct('4901234567801');
-      final firstAt = DateTime(2026, 8, 30, 10, 0);
+    test(
+      'treats exactly five minutes as inside the duplicate window',
+      () async {
+        final productId = await createProduct('4901234567801');
+        final firstAt = DateTime(2026, 8, 30, 10, 0);
 
-      await repository.insertObservationWithDate(
-        productId: productId,
-        priceYen: 500,
-        priceConfidence: 0.95,
-        observedAt: firstAt,
-      );
+        await repository.insertObservationWithDate(
+          productId: productId,
+          priceYen: 500,
+          priceConfidence: 0.95,
+          observedAt: firstAt,
+        );
 
-      final duplicate = await repository.isDuplicate(
-        productId: productId,
-        priceYen: 500,
-        observedAt: firstAt.add(const Duration(minutes: 5)),
-      );
+        final duplicate = await repository.isDuplicate(
+          productId: productId,
+          priceYen: 500,
+          observedAt: firstAt.add(const Duration(minutes: 5)),
+        );
 
-      expect(duplicate, isTrue);
-    });
+        expect(duplicate, isTrue);
+      },
+    );
 
     test('does not flag the same price after more than five minutes', () async {
       final productId = await createProduct('4901234567802');
