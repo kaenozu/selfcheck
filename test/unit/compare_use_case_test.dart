@@ -39,64 +39,78 @@ void main() {
     });
 
     group('compare', () {
-      test('firstPrice - returns firstPrice status when no observations', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
+      test(
+        'firstPrice - returns firstPrice status when no observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
 
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
 
-        expect(result.status, domain.ComparisonStatus.firstPrice);
-        expect(result.currentPrice, 500);
-      });
+          expect(result.status, domain.ComparisonStatus.firstPrice);
+          expect(result.currentPrice, 500);
+        },
+      );
 
-      test('historyShort - returns historyShort when 1-2 observations', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
+      test(
+        'historyShort - returns historyShort when 1-2 observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
 
-        await repository.insertObservation(
-          productId: product.id,
-          priceYen: 500,
-          priceConfidence: 0.9,
-        );
-
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
-
-        expect(result.status, domain.ComparisonStatus.historyShort);
-      });
-
-      test('withBaseline - returns withBaseline when 3+ observations', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
-
-        for (var i = 0; i < 3; i++) {
           await repository.insertObservation(
             productId: product.id,
-            priceYen: 500 + i * 10,
+            priceYen: 500,
             priceConfidence: 0.9,
           );
-        }
 
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
 
-        expect(result.status, domain.ComparisonStatus.withBaseline);
-        expect(result.baselineMedianYen, isNotNull);
-        expect(result.label, isNotNull);
-      });
+          expect(result.status, domain.ComparisonStatus.historyShort);
+        },
+      );
+
+      test(
+        'withBaseline - returns withBaseline when 3+ observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
+
+          for (var i = 0; i < 3; i++) {
+            await repository.insertObservation(
+              productId: product.id,
+              priceYen: 500 + i * 10,
+              priceConfidence: 0.9,
+            );
+          }
+
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
+
+          expect(result.status, domain.ComparisonStatus.withBaseline);
+          expect(result.baselineMedianYen, isNotNull);
+          expect(result.label, isNotNull);
+        },
+      );
 
       test('even-count median averages the two center values', () async {
-        final product = await repository.createProvisionalProduct('EVEN_MEDIAN');
+        final product = await repository.createProvisionalProduct(
+          'EVEN_MEDIAN',
+        );
         await insertObservationsSpaced(
           repository,
           productId: product.id,
@@ -117,7 +131,9 @@ void main() {
       });
 
       test('half-yen median rounds to the nearest whole yen', () async {
-        final product = await repository.createProvisionalProduct('HALF_MEDIAN');
+        final product = await repository.createProvisionalProduct(
+          'HALF_MEDIAN',
+        );
         await insertObservationsSpaced(
           repository,
           productId: product.id,
@@ -134,8 +150,9 @@ void main() {
       });
 
       test('inserts new observation by default', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         await useCase.compare(
           currentPriceYen: 500,
@@ -154,8 +171,9 @@ void main() {
       });
 
       test('skipInsert=true does NOT save a new observation', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         await insertObservationsSpaced(
           repository,
@@ -167,8 +185,7 @@ void main() {
           productId: product.id,
           since: DateTime.now().subtract(const Duration(days: 30)),
           limit: 10,
-        ))
-            .length;
+        )).length;
 
         final result = await useCase.compare(
           currentPriceYen: 500,
@@ -181,8 +198,7 @@ void main() {
           productId: product.id,
           since: DateTime.now().subtract(const Duration(days: 30)),
           limit: 10,
-        ))
-            .length;
+        )).length;
 
         expect(countAfter, countBefore);
         expect(countAfter, 3);
@@ -191,8 +207,9 @@ void main() {
       });
 
       test('skipInsert=true still returns correct comparison', () async {
-        final product =
-            await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         await insertObservationsSpaced(
           repository,
