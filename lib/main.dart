@@ -98,9 +98,9 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
       try {
         await activeRecovery;
       } on Object {
-        // Continue below so a stale/failed recovery can be retried once.
+        // Join the existing attempt. A later explicit retry may start a new one.
       }
-      if (_cameraPipeline.isReady) return;
+      return;
     }
 
     if (_cameraPipeline.isReady) return;
