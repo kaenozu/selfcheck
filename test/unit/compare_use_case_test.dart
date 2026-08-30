@@ -39,61 +39,78 @@ void main() {
     });
 
     group('compare', () {
-      test('firstPrice - returns firstPrice status when no observations', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+      test(
+        'firstPrice - returns firstPrice status when no observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
 
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
 
-        expect(result.status, domain.ComparisonStatus.firstPrice);
-        expect(result.currentPrice, 500);
-      });
+          expect(result.status, domain.ComparisonStatus.firstPrice);
+          expect(result.currentPrice, 500);
+        },
+      );
 
-      test('historyShort - returns historyShort when 1-2 observations', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+      test(
+        'historyShort - returns historyShort when 1-2 observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
 
-        await repository.insertObservation(
-          productId: product.id,
-          priceYen: 500,
-          priceConfidence: 0.9,
-        );
-
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
-
-        expect(result.status, domain.ComparisonStatus.historyShort);
-      });
-
-      test('withBaseline - returns withBaseline when 3+ observations', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
-
-        for (var i = 0; i < 3; i++) {
           await repository.insertObservation(
             productId: product.id,
-            priceYen: 500 + i * 10,
+            priceYen: 500,
             priceConfidence: 0.9,
           );
-        }
 
-        final result = await useCase.compare(
-          currentPriceYen: 500,
-          productId: product.id,
-          currentConfidence: 0.95,
-        );
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
 
-        expect(result.status, domain.ComparisonStatus.withBaseline);
-        expect(result.baselineMedianYen, isNotNull);
-        expect(result.label, isNotNull);
-      });
+          expect(result.status, domain.ComparisonStatus.historyShort);
+        },
+      );
+
+      test(
+        'withBaseline - returns withBaseline when 3+ observations',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            '4901234567890',
+          );
+
+          for (var i = 0; i < 3; i++) {
+            await repository.insertObservation(
+              productId: product.id,
+              priceYen: 500 + i * 10,
+              priceConfidence: 0.9,
+            );
+          }
+
+          final result = await useCase.compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+          );
+
+          expect(result.status, domain.ComparisonStatus.withBaseline);
+          expect(result.baselineMedianYen, isNotNull);
+          expect(result.label, isNotNull);
+        },
+      );
 
       test('inserts new observation by default', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         await useCase.compare(
           currentPriceYen: 500,
@@ -112,10 +129,16 @@ void main() {
       });
 
       test('skipInsert=true does NOT save a new observation', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         // Add 3 existing observations (spaced across 5-min windows)
-        await insertObservationsSpaced(repository, productId: product.id, prices: [500, 500, 500]);
+        await insertObservationsSpaced(
+          repository,
+          productId: product.id,
+          prices: [500, 500, 500],
+        );
 
         final countBefore = (await repository.getValidObservations(
           productId: product.id,
@@ -147,10 +170,16 @@ void main() {
       });
 
       test('skipInsert=true still returns correct comparison', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         // Add 5 observations at ¥500 (spaced across 5-min windows)
-        await insertObservationsSpaced(repository, productId: product.id, prices: [500, 500, 500, 500, 500]);
+        await insertObservationsSpaced(
+          repository,
+          productId: product.id,
+          prices: [500, 500, 500, 500, 500],
+        );
 
         // Compare with skipInsert=true — current price is cheaper
         final result = await useCase.compare(
@@ -204,11 +233,26 @@ void main() {
 
   group('ComparisonPolicy', () {
     test('labelForDiffRate returns correct labels', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.15), domain.ComparisonLabel.veryCheap);
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.08), domain.ComparisonLabel.cheap);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.0), domain.ComparisonLabel.normal);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.08), domain.ComparisonLabel.slightlyExpensive);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.15), domain.ComparisonLabel.expensive);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.15),
+        domain.ComparisonLabel.veryCheap,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.08),
+        domain.ComparisonLabel.cheap,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.0),
+        domain.ComparisonLabel.normal,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.08),
+        domain.ComparisonLabel.slightlyExpensive,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.15),
+        domain.ComparisonLabel.expensive,
+      );
     });
   });
 }

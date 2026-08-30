@@ -125,7 +125,9 @@ class ScanCoordinator {
   }
 
   void _onPriceDetected(PriceCandidate price) async {
-    if (_state != ScanState.scanning && _state != ScanState.waitingPrice) return;
+    if (_state != ScanState.scanning && _state != ScanState.waitingPrice) {
+      return;
+    }
 
     final isStable = _stabilizer.submit(price);
 
@@ -150,7 +152,10 @@ class ScanCoordinator {
   }
 
   Future<void> _compare(
-      BarcodeCandidate barcode, int priceYen, double confidence) async {
+    BarcodeCandidate barcode,
+    int priceYen,
+    double confidence,
+  ) async {
     _state = ScanState.comparing;
     _stateController.add(_state);
 

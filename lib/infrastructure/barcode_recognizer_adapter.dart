@@ -6,7 +6,7 @@ import '../domain/scan_state.dart';
 abstract interface class BarcodeRecognizerAdapter {
   /// フレームからバーコード候補を返す
   Future<List<BarcodeCandidate>> detectBarcodes(CameraFrame frame);
-  
+
   /// アダプターを解放する
   void dispose();
 }
@@ -15,8 +15,8 @@ abstract interface class BarcodeRecognizerAdapter {
 class CameraFrame {
   final int width;
   final int height;
-  final List<int> bytes;      // フレームバイト列
-  final int rotationDegrees;  // 回転角度
+  final List<int> bytes; // フレームバイト列
+  final int rotationDegrees; // 回転角度
   final DateTime timestamp;
 
   const CameraFrame({

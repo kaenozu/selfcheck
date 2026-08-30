@@ -41,7 +41,8 @@ class ScanScreenUiState {
   }
 
   /// Whether the scan button should be enabled
-  bool get canStartScan => scanState == ScanState.idle || scanState == ScanState.error;
+  bool get canStartScan =>
+      scanState == ScanState.idle || scanState == ScanState.error;
   bool get isScanning =>
       scanState == ScanState.scanning || scanState == ScanState.waitingPrice;
   bool get isShowingResult => scanState == ScanState.result;
@@ -61,9 +62,7 @@ class ScanScreenController extends ChangeNotifier {
   ScanScreenUiState _uiState = const ScanScreenUiState();
   ScanScreenUiState get uiState => _uiState;
 
-  ScanScreenController({
-    required this._coordinator,
-  });
+  ScanScreenController({required this._coordinator});
 
   /// Initialize and start listening to coordinator state/result/error streams
   void init() {

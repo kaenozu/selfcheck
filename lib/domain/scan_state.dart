@@ -1,12 +1,12 @@
 /// スキャン状態
 enum ScanState {
-  idle,          // カメラ起動待ち
-  scanning,      // バーコード+価格を並列認識中
-  waitingPrice,  // バーコード確定済み、価格安定化待ち
-  noProduct,     // 価格確定済み、バーコード認識待ち
-  comparing,     // 過去履歴比較中
-  result,        // 結果表示
-  error,         // エラー発生（自動復帰可能）
+  idle, // カメラ起動待ち
+  scanning, // バーコード+価格を並列認識中
+  waitingPrice, // バーコード確定済み、価格安定化待ち
+  noProduct, // 価格確定済み、バーコード認識待ち
+  comparing, // 過去履歴比較中
+  result, // 結果表示
+  error, // エラー発生（自動復帰可能）
 }
 
 /// スキャン結果（状態機械の出力）
@@ -42,15 +42,16 @@ class ScanResult {
   }
 
   @override
-  String toString() => 'ScanResult(state: $state, productId: $productId, price: ¥$priceYen)';
+  String toString() =>
+      'ScanResult(state: $state, productId: $productId, price: ¥$priceYen)';
 }
 
 /// バーコード候補
 class BarcodeCandidate {
-  final String barcode;         // JAN/EAN-13文字列
-  final BarcodeFormat format;   // フォーマット
-  final double confidence;      // 信頼度（0.0〜1.0）
-  final Rect region;            // 画面上の位置
+  final String barcode; // JAN/EAN-13文字列
+  final BarcodeFormat format; // フォーマット
+  final double confidence; // 信頼度（0.0〜1.0）
+  final Rect region; // 画面上の位置
 
   const BarcodeCandidate({
     required this.barcode,
@@ -64,20 +65,14 @@ class BarcodeCandidate {
 }
 
 /// バーコードフォーマット
-enum BarcodeFormat {
-  ean13,
-  ean8,
-  code128,
-  qrCode,
-  unknown,
-}
+enum BarcodeFormat { ean13, ean8, code128, qrCode, unknown }
 
 /// 価格候補
 class PriceCandidate {
-  final int priceYen;           // 1〜99,999
-  final double confidence;      // 0.0〜1.0
-  final Rect region;            // 画面上の位置
-  final List<String> rawTexts;  // OCR生文字列
+  final int priceYen; // 1〜99,999
+  final double confidence; // 0.0〜1.0
+  final Rect region; // 画面上の位置
+  final List<String> rawTexts; // OCR生文字列
 
   const PriceCandidate({
     required this.priceYen,
