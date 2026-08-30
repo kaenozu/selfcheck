@@ -19,13 +19,13 @@ import 'price_text_parser.dart';
 /// flight to avoid unbounded frame queues.
 class CameraRecognitionPipeline extends ChangeNotifier {
   CameraRecognitionPipeline()
-      : _barcodeScanner = ml_barcode.BarcodeScanner(
-          formats: const [
-            ml_barcode.BarcodeFormat.ean13,
-            ml_barcode.BarcodeFormat.ean8,
-          ],
-        ),
-        _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    : _barcodeScanner = ml_barcode.BarcodeScanner(
+        formats: const [
+          ml_barcode.BarcodeFormat.ean13,
+          ml_barcode.BarcodeFormat.ean8,
+        ],
+      ),
+      _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
   final ml_barcode.BarcodeScanner _barcodeScanner;
   final TextRecognizer _textRecognizer;
@@ -140,7 +140,8 @@ class CameraRecognitionPipeline extends ChangeNotifier {
 
   Future<void> _disposeCameraController(CameraController controller) async {
     try {
-      if (controller.value.isInitialized && controller.value.isStreamingImages) {
+      if (controller.value.isInitialized &&
+          controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
     } on Object catch (error, stackTrace) {
@@ -266,8 +267,8 @@ class CameraRecognitionPipeline extends ChangeNotifier {
 
     final rotationCompensation =
         camera.lensDirection == CameraLensDirection.front
-            ? (camera.sensorOrientation + compensation) % 360
-            : (camera.sensorOrientation - compensation + 360) % 360;
+        ? (camera.sensorOrientation + compensation) % 360
+        : (camera.sensorOrientation - compensation + 360) % 360;
     return InputImageRotationValue.fromRawValue(rotationCompensation);
   }
 
