@@ -80,4 +80,40 @@ void main() {
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
+
+  test('prefers tax-inclusive price over a larger tax-exclusive line', () {
+    const largeRegion = Rect(left: 0, top: 0, right: 120, bottom: 40);
+    const smallRegion = Rect(left: 0, top: 50, right: 70, bottom: 75);
+
+    final result = parsePriceText([
+      (text: '本体価格 398円', region: largeRegion),
+      (text: '税込 429円', region: smallRegion),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 429);
+    expect(result.region, smallRegion);
+  });
+
+  test('selects tax-inclusive value when both prices share one OCR line', () {
+    final result = parsePriceText([
+      (text: '本体価格398円（税込429円）', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 429);
+  });
+
+  test('recognizes a price followed by an inclusive-tax marker', () {
+    final result = parsePriceText([(text: '429円（税込）', region: region)]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 429);
+  });
+
+  test('fails closed for an explicitly tax-exclusive price only', () {
+    expect(parsePriceText([(text: '税抜 398円', region: region)]), isNull);
+    expect(parsePriceText([(text: '本体価格 ￥398', region: region)]), isNull);
+    expect(parsePriceText([(text: '税別 398円', region: region)]), isNull);
+  });
 }
