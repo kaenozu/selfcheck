@@ -3,12 +3,16 @@ import '../domain/scan_state.dart';
 final RegExp _pricePattern = RegExp(
   r'(?<![0-9])(?:[¥￥]\s*)?([0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?(?![0-9])',
 );
+final RegExp _barePriceLinePattern = RegExp(
+  r'^\s*(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})\s*$',
+);
 
 /// Parses a plausible retail price from OCR text without guessing values.
 ///
-/// Currency-marked candidates are preferred. Bare numbers are accepted only in
-/// the 1..99,999 yen range; JAN/EAN-length values are therefore never treated
-/// as prices.
+/// Currency-marked candidates are preferred. A bare number is accepted only
+/// when the whole OCR line is numeric, preventing text such as "在庫 12" from
+/// being treated as a price. Among equally-ranked bare candidates, the larger
+/// OCR region wins because shelf-label prices are typically the dominant text.
 PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
   _ParsedPrice? best;
 
@@ -25,6 +29,10 @@ PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
           matchedText.contains('¥') ||
           matchedText.contains('￥') ||
           matchedText.contains('円');
+      if (!hasCurrencyMarker && !_barePriceLinePattern.hasMatch(line.text)) {
+        continue;
+      }
+
       final candidate = _ParsedPrice(
         value: value,
         confidence: hasCurrencyMarker ? 0.90 : 0.70,
@@ -32,7 +40,10 @@ PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
         rawText: line.text,
       );
 
-      if (best == null || candidate.confidence > best.confidence) {
+      if (best == null ||
+          candidate.confidence > best.confidence ||
+          (candidate.confidence == best.confidence &&
+              candidate.regionArea > best.regionArea)) {
         best = candidate;
       }
     }
@@ -59,4 +70,6 @@ class _ParsedPrice {
   final double confidence;
   final Rect region;
   final String rawText;
+
+  double get regionArea => region.width.abs() * region.height.abs();
 }
