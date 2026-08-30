@@ -6,11 +6,17 @@ final RegExp _pricePattern = RegExp(
 final RegExp _barePriceLinePattern = RegExp(
   r'^\s*(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})\s*$',
 );
-final RegExp _unitPriceContextPattern = RegExp(
-  r'(?:'
-  r'(?:[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック))\s*(?:当たり|あたり|当り|につき)'
-  r'|[/／]\s*[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック)'
-  r')',
+final RegExp _unitPriceAfterUnitPattern = RegExp(
+  r'(?:[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック))'
+  r'\s*(?:当たり|あたり|当り|につき)\s*[:：]?\s*'
+  r'(?:[¥￥]\s*)?'
+  r'(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?',
+  caseSensitive: false,
+);
+final RegExp _unitPriceSlashPattern = RegExp(
+  r'(?:[¥￥]\s*)?'
+  r'(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?'
+  r'\s*[/／]\s*[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック)',
   caseSensitive: false,
 );
 final RegExp _taxInclusiveAfterPattern = RegExp(
@@ -27,20 +33,27 @@ final RegExp _taxExclusiveContextPattern = RegExp(
 
 /// Parses a plausible retail price from OCR text without guessing values.
 ///
+/// Explicit unit-price segments are removed before candidate ranking so a
+/// product price can still be recognized when OCR groups both values into one
+/// text line. A unit-price-only line becomes empty and therefore fails closed.
 /// Explicit tax-inclusive totals are preferred because they represent the
 /// consumer-facing amount paid. Explicit tax-exclusive-only lines fail closed.
 /// Currency-marked candidates are otherwise preferred. A bare number is
-/// accepted only when the whole OCR line is numeric, preventing text such as
-/// "在庫 12" from being treated as a price. Explicit unit-price lines such as
-/// "100g当たり ¥198" or "¥198/100g" are rejected rather than stored as a
-/// product price. Among equally ranked candidates, the larger OCR region wins.
+/// accepted only when the whole remaining OCR line is numeric, preventing text
+/// such as "在庫 12" from being treated as a price. Among equally ranked
+/// candidates, the larger OCR region wins.
 PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
   _ParsedPrice? best;
 
   for (final line in lines) {
-    if (_unitPriceContextPattern.hasMatch(line.text)) continue;
+    final candidateText = _withoutExplicitUnitPrices(line.text).trim();
+    if (candidateText.isEmpty) continue;
 
-    final taxInclusive = _parseTaxInclusiveCandidate(line);
+    final taxInclusive = _parseTaxInclusiveCandidate(
+      text: candidateText,
+      rawText: line.text,
+      region: line.region,
+    );
     if (taxInclusive != null) {
       if (_isBetterCandidate(taxInclusive, best)) {
         best = taxInclusive;
@@ -48,9 +61,9 @@ PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
       continue;
     }
 
-    if (_taxExclusiveContextPattern.hasMatch(line.text)) continue;
+    if (_taxExclusiveContextPattern.hasMatch(candidateText)) continue;
 
-    for (final match in _pricePattern.allMatches(line.text)) {
+    for (final match in _pricePattern.allMatches(candidateText)) {
       final value = _parsePriceValue(match.group(1));
       if (value == null) continue;
 
@@ -59,7 +72,8 @@ PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
           matchedText.contains('¥') ||
           matchedText.contains('￥') ||
           matchedText.contains('円');
-      if (!hasCurrencyMarker && !_barePriceLinePattern.hasMatch(line.text)) {
+      if (!hasCurrencyMarker &&
+          !_barePriceLinePattern.hasMatch(candidateText)) {
         continue;
       }
 
@@ -86,11 +100,19 @@ PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
   );
 }
 
-_ParsedPrice? _parseTaxInclusiveCandidate(
-  ({String text, Rect region}) line,
-) {
+String _withoutExplicitUnitPrices(String text) {
+  return text
+      .replaceAll(_unitPriceAfterUnitPattern, ' ')
+      .replaceAll(_unitPriceSlashPattern, ' ');
+}
+
+_ParsedPrice? _parseTaxInclusiveCandidate({
+  required String text,
+  required String rawText,
+  required Rect region,
+}) {
   for (final pattern in [_taxInclusiveAfterPattern, _taxInclusiveBeforePattern]) {
-    final match = pattern.firstMatch(line.text);
+    final match = pattern.firstMatch(text);
     final value = _parsePriceValue(match?.group(1));
     if (value == null) continue;
 
@@ -98,8 +120,8 @@ _ParsedPrice? _parseTaxInclusiveCandidate(
       value: value,
       confidence: 0.90,
       priority: 3,
-      region: line.region,
-      rawText: line.text,
+      region: region,
+      rawText: rawText,
     );
   }
   return null;
