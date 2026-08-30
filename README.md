@@ -4,9 +4,11 @@
 
 ## 現在の状態
 
-このリポジトリは **PoC段階** です。価格比較ドメイン、スキャン状態機械、Driftによる商品・価格履歴、結果UI、単体/結合テストはありますが、現行`master`では実カメラ → JAN/EAN認識 → 価格OCRのproduction pipelineは未接続です。`lib/main.dart`は認識streamにstubを使用しており、実機で主要スキャンフローを完了できません。実カメラ対応はIssue #1のrelease blockerです。
+このリポジトリは **PoC / MVP受入途中** です。価格比較ドメイン、スキャン状態機械、Driftによる商品・価格履歴、結果UI、単体/結合テストがあります。
 
-生成済みのFlutter runnerは複数platformに存在しますが、現在の主要受入対象はAndroidです。ストア配布可能性は、実カメラ受入・release signing・CI等の未完了gateを解消してから判断します。
+実カメラ → JAN/EAN認識 → 価格OCRのproduction pipelineは Issue #1 / Draft PR #35 で実装・検証中です。コードが存在することと実機Acceptance完了は分けて扱い、Issue #1 の実機条件（permission、live preview、EAN認識、価格OCR、lifecycle、airplane mode、storage/cache確認）が完了するまでは主要スキャンフローをリリース済みとは扱いません。
+
+生成済みのFlutter runnerは複数platformに存在しますが、現在の主要受入対象はAndroidです。iOSはPR #35のplugin/configurationに対してno-codesign build gateをIssue #36 / Draft PR #46で追加中です。ストア配布可能性は、実機受入・release signing・CI等のgateを解消してから判断します。
 
 ## アーキテクチャ
 
@@ -20,13 +22,13 @@
 
 ## データとプライバシー
 
-商品identityと価格観測は端末内SQLite (`selfcheck.sqlite`) に保存します。設計上、カメラframeそのものをDBやファイルへ永続保存する必要はありません。実カメラpipelineを実装する際も、画像を不要に永続化しないことを契約として維持します。
+商品identityと価格観測は端末内SQLite (`selfcheck.sqlite`) に保存します。カメラframeそのものをDBやファイルへ永続保存しないことを設計契約とし、実カメラpipelineでもフレームは端末内認識の入力としてメモリ上で扱います。
 
 価格履歴はJAN/EANで同定した商品単位で扱います。比較結果を正しくするため、認識途中の不安定な価格や別商品の価格を混在させないことが重要です。
 
 ## 必要環境
 
-CI導入PRでは次を基準環境としています。
+CIの基準環境は次のとおりです。
 
 - Flutter 3.44.0
 - Dart 3.12系
@@ -63,7 +65,7 @@ flutter devices
 flutter run
 ```
 
-現行PoCでは実カメラ認識pipelineが未実装のため、起動できても実店頭スキャンの完了をrelease acceptanceとして扱わないでください。
+実カメラpipelineのコードが入ったbranchでも、実機Acceptanceが未完了なら店頭スキャンをrelease acceptanceとして扱わないでください。現在の正確な状態はIssue #1と関連Draft PRを確認してください。
 
 ## 品質ゲート
 
@@ -79,15 +81,23 @@ flutter build apk --debug
 git diff --check
 ```
 
-`AC_VALIDATION_REPORT.md`はPoC acceptanceの過去/現行証跡を読むための補助資料です。READMEの「現在の状態」やGitHubのOpen Issueより古い記述を、現在のrelease readinessとして扱わないでください。
+`AC_VALIDATION_REPORT.md`はPoC acceptanceの証跡です。enumの存在やin-memory処理だけを実機Acceptanceの代用にせず、physical-device依存条件はPENDINGとして扱います。最新状態はGitHub Issuesとexact-head CIを正本にしてください。
 
 ## CI
 
-CI追加はPR #14で管理しています。format/analyze/test、Drift生成物の整合、Android debug buildを自動gateにする方針です。CIが導入されても、実機カメラ受入や正式署名など環境依存gateの代替にはなりません。
+`master` の `.github/workflows/ci.yml` では、Flutter 3.44.0 / Java 17を使って次を自動検証します。
+
+- `flutter analyze`
+- full `flutter test`
+- Drift生成コード整合性
+- Android debug APK build
+- 変更Dartファイルのformatter準拠
+
+iOSのcamera/ML Kit統合については、Issue #36 / Draft PR #46で `flutter build ios --debug --no-codesign` の恒久gateを追加中です。CIがgreenでも、実機カメラ受入や正式署名など環境依存gateの代替にはなりません。
 
 ## Release
 
-`master`の初期PoCはAndroid release buildでdebug keyを使うため、そのままストア配布してはいけません。release signingのfail-closed化はIssue #12で追跡しています。keystore、password、API keyなどの秘密情報をGitへcommitしないでください。
+Android release signingはIssue #12でfail-closed化を追跡しています。keystore、password、API keyなどの秘密情報をGitへcommitしないでください。
 
 Production公開、ストアupload、署名credentialの作成/再発行は、コード変更とは分離した明示的なrelease作業として扱います。
 
@@ -95,10 +105,10 @@ Production公開、ストアupload、署名credentialの作成/再発行は、�
 
 最新状態はGitHub Issuesを正本として確認してください。特にrelease判断では以下を優先します。
 
-- 実カメラ・JAN/EAN・価格OCR pipeline
-- scan lifecycle / stabilizationの回帰修正
-- SQLite integrityと履歴整合性
-- CI quality gate
-- Android release signing
+- Issue #1: 実カメラ・JAN/EAN・価格OCRの実機Acceptance
+- Issue #10: acceptance evidenceのfail-closed化とdevice-only gate
+- Issue #12: Android release signing
+- Issue #36: iOS no-codesign CI gate
+- DB整合性・重複判定・scan lifecycleの各修正PR
 
-PoCのテストがgreenであることだけを「実機MVP完成」と解釈しないでください。
+自動テストがgreenであることだけを「実機MVP完成」と解釈しないでください。
