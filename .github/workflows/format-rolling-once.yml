@@ -1,0 +1,33 @@
+name: Format rolling duplicate test once
+
+on:
+  push:
+    branches:
+      - fix/rolling-duplicate-window
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - run: dart format test/unit/rolling_duplicate_window_test.dart
+      - shell: bash
+        run: |
+          if git diff --quiet -- test/unit/rolling_duplicate_window_test.dart; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add test/unit/rolling_duplicate_window_test.dart
+          git commit -m 'style: format rolling duplicate regression (#7)'
+          git push origin HEAD:fix/rolling-duplicate-window
