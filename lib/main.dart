@@ -66,12 +66,17 @@ class _ScanScreenEntryState extends State<ScanScreenEntry> {
     _database = AppDatabase();
     _repository = PriceRepositoryImpl(_database);
     _compareUseCase = CompareUseCase(_repository);
-    _cameraPipeline = CameraRecognitionPipeline();
+    final barcodeAdapter = MlBarcodeAdapter();
+    final priceOcrAdapter = MlPriceOcrAdapter();
+    _cameraPipeline = CameraRecognitionPipeline(
+      barcodeAdapter: barcodeAdapter,
+      priceOcrAdapter: priceOcrAdapter,
+    );
     _coordinator = ScanCoordinator(
       repository: _repository,
       compareUseCase: _compareUseCase,
-      barcodeAdapter: CameraBarcodeAdapter(_cameraPipeline),
-      priceAdapter: CameraPriceOcrAdapter(_cameraPipeline),
+      barcodeAdapter: CameraBarcodeAdapter(barcodeAdapter),
+      priceAdapter: CameraPriceOcrAdapter(priceOcrAdapter),
     );
     _controller = ScanScreenController(coordinator: _coordinator);
     unawaited(_initializeCamera());

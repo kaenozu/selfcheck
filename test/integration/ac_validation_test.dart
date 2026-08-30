@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:selfcheck_jibun_check/domain/scan_state.dart';
 import 'package:selfcheck_jibun_check/domain/comparison_result.dart' as domain;
+import 'package:selfcheck_jibun_check/domain/price_observation.dart';
 import 'package:selfcheck_jibun_check/application/scan_coordinator.dart';
 import 'package:selfcheck_jibun_check/application/compare_use_case.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_stabilizer.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository_impl.dart';
-import 'package:selfcheck_jibun_check/infrastructure/database/app_database.dart';
 
 /// ╔══════════════════════════════════════════════════════════════════╗
 /// ║  AC Validation Tests — 自分値 MVP v0.2 P0 PoC                  ║
@@ -425,14 +425,13 @@ void main() {
   // ─────────────────────────────────────────────────────────────────
   group('AC-07: No camera images in data storage', () {
     test('PriceObservation stores only price data, no image path', () {
-      final obs = PriceObservation(
+      final obs = PriceObservationDomain(
         id: 'obs-1',
         productId: 'prod-1',
         priceYen: 500,
         observedAt: DateTime.now(),
         priceConfidence: 0.9,
         isValid: true,
-        duplicateKey: 'key',
       );
 
       expect(obs.id, isNotEmpty);

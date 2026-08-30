@@ -1,38 +1,73 @@
 import 'package:drift/native.dart';
+
+import '../domain/product.dart';
+import '../domain/price_observation.dart';
 import 'database/app_database.dart';
 import 'price_repository.dart';
 
-/// PriceRepository implementation using Drift database
+/// PriceRepository implementation using Drift database.
+///
+/// Maps between Drift-generated data classes and domain models at this
+/// boundary, so the rest of the app never depends on Drift types.
 class PriceRepositoryImpl implements PriceRepository {
   final AppDatabase _database;
 
   PriceRepositoryImpl(this._database);
 
+  // ── Mapping helpers ──────────────────────────────────────────────────
+
+  Product _mapProduct(ProductIdentity row) => Product(
+        id: row.id,
+        jan: row.jan,
+        displayName: row.displayName,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      );
+
+  PriceObservationDomain _mapObservation(PriceObservation row) =>
+      PriceObservationDomain(
+        id: row.id,
+        productId: row.productId,
+        priceYen: row.priceYen,
+        observedAt: row.observedAt,
+        priceConfidence: row.priceConfidence,
+        isValid: row.isValid,
+        isSaleVisible: row.isSaleVisible,
+        isMemberPriceVisible: row.isMemberPriceVisible,
+        isCouponPriceVisible: row.isCouponPriceVisible,
+        isBulkDiscount: row.isBulkDiscount,
+      );
+
+  // ── PriceRepository interface ────────────────────────────────────────
+
   @override
-  Future<ProductIdentity?> findProductByJan(String jan) async {
-    return await _database.findProductByJan(jan);
+  Future<Product?> findProductByJan(String jan) async {
+    final row = await _database.findProductByJan(jan);
+    return row == null ? null : _mapProduct(row);
   }
 
   @override
-  Future<ProductIdentity> createProvisionalProduct(String jan) async {
-    return await _database.insertProvisionalProduct(jan);
+  Future<Product> createProvisionalProduct(String jan) async {
+    final row = await _database.insertProvisionalProduct(jan);
+    return _mapProduct(row);
   }
 
   @override
-  Future<List<PriceObservation>> getValidObservations({
+  Future<List<PriceObservationDomain>> getValidObservations({
     required String productId,
     required DateTime since,
     required int limit,
   }) async {
-    return await _database.getValidObservations(
+    final rows = await _database.getValidObservations(
       productId: productId,
       since: since,
       limit: limit,
     );
+    return rows.map(_mapObservation).toList();
   }
 
   @override
-  Future<PriceObservation> insertObservation({
+  Future<PriceObservationDomain> insertObservation({
     required String productId,
     required int priceYen,
     required double priceConfidence,
@@ -41,7 +76,7 @@ class PriceRepositoryImpl implements PriceRepository {
     bool? isCouponPriceVisible,
     bool? isBulkDiscount,
   }) async {
-    return await _database.insertObservation(
+    final row = await _database.insertObservation(
       productId: productId,
       priceYen: priceYen,
       priceConfidence: priceConfidence,
@@ -50,6 +85,7 @@ class PriceRepositoryImpl implements PriceRepository {
       isCouponPriceVisible: isCouponPriceVisible,
       isBulkDiscount: isBulkDiscount,
     );
+    return _mapObservation(row);
   }
 
   @override
@@ -66,7 +102,7 @@ class PriceRepositoryImpl implements PriceRepository {
   }
 
   @override
-  Future<PriceObservation> insertObservationWithDate({
+  Future<PriceObservationDomain> insertObservationWithDate({
     required String productId,
     required int priceYen,
     required double priceConfidence,
@@ -76,7 +112,7 @@ class PriceRepositoryImpl implements PriceRepository {
     bool? isCouponPriceVisible,
     bool? isBulkDiscount,
   }) async {
-    return await _database.insertObservationWithDate(
+    final row = await _database.insertObservationWithDate(
       productId: productId,
       priceYen: priceYen,
       priceConfidence: priceConfidence,
@@ -86,6 +122,7 @@ class PriceRepositoryImpl implements PriceRepository {
       isCouponPriceVisible: isCouponPriceVisible,
       isBulkDiscount: isBulkDiscount,
     );
+    return _mapObservation(row);
   }
 
   @override

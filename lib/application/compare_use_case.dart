@@ -41,9 +41,14 @@ class CompareUseCase {
       return ComparisonResult.firstPrice(currentPriceYen);
     }
 
-    // Calculate median
+    // Calculate median (average of two middle values for even counts)
     final prices = observations.map((o) => o.priceYen).toList()..sort();
-    final median = prices[prices.length ~/ 2];
+    final int median;
+    if (prices.length.isOdd) {
+      median = prices[prices.length ~/ 2];
+    } else {
+      median = (prices[prices.length ~/ 2 - 1] + prices[prices.length ~/ 2]) ~/ 2;
+    }
 
     if (observations.length < 3) {
       return ComparisonResult.historyShort(

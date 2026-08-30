@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:selfcheck_jibun_check/domain/scan_state.dart';
+import 'package:selfcheck_jibun_check/domain/product.dart';
+import 'package:selfcheck_jibun_check/domain/price_observation.dart';
 import 'package:selfcheck_jibun_check/application/scan_coordinator.dart';
 import 'package:selfcheck_jibun_check/application/compare_use_case.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository_impl.dart';
-import 'package:selfcheck_jibun_check/infrastructure/database/app_database.dart';
 
 void main() {
   group('ScanCoordinator error handling', () {
@@ -282,15 +283,15 @@ class _BrokenRepository implements PriceRepository {
   }) async => false;
 
   @override
-  Future<ProductIdentity?> findProductByJan(String jan) =>
+  Future<Product?> findProductByJan(String jan) =>
       _inner.findProductByJan(jan);
 
   @override
-  Future<ProductIdentity> createProvisionalProduct(String jan) =>
+  Future<Product> createProvisionalProduct(String jan) =>
       _inner.createProvisionalProduct(jan);
 
   @override
-  Future<List<PriceObservation>> getValidObservations({
+  Future<List<PriceObservationDomain>> getValidObservations({
     required String productId,
     required DateTime since,
     required int limit,
@@ -298,7 +299,7 @@ class _BrokenRepository implements PriceRepository {
       productId: productId, since: since, limit: limit);
 
   @override
-  Future<PriceObservation> insertObservation({
+  Future<PriceObservationDomain> insertObservation({
     required String productId,
     required int priceYen,
     required double priceConfidence,
@@ -311,7 +312,7 @@ class _BrokenRepository implements PriceRepository {
   }
 
   @override
-  Future<PriceObservation> insertObservationWithDate({
+  Future<PriceObservationDomain> insertObservationWithDate({
     required String productId,
     required int priceYen,
     required double priceConfidence,
