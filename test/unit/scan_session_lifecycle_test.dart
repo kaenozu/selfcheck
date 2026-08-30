@@ -18,11 +18,11 @@ const _barcode = BarcodeCandidate(
 );
 
 PriceCandidate _price(int value) => PriceCandidate(
-      priceYen: value,
-      confidence: 0.9,
-      region: _region,
-      rawTexts: ['$value'],
-    );
+  priceYen: value,
+  confidence: 0.9,
+  region: _region,
+  rawTexts: ['$value'],
+);
 
 Future<void> _flush([int milliseconds = 30]) =>
     Future<void>.delayed(Duration(milliseconds: milliseconds));
@@ -55,7 +55,9 @@ void main() {
 
     test('does not compare a price that has not stabilized', () async {
       final results = <int>[];
-      coordinator.resultStream.listen((result) => results.add(result.currentPrice));
+      coordinator.resultStream.listen(
+        (result) => results.add(result.currentPrice),
+      );
 
       coordinator.startScan();
       priceAdapter.add(_price(398));
@@ -79,23 +81,26 @@ void main() {
       expect(results, [398]);
     });
 
-    test('clears a price-only result before accepting the next barcode', () async {
-      coordinator.startScan();
+    test(
+      'clears a price-only result before accepting the next barcode',
+      () async {
+        coordinator.startScan();
 
-      for (var i = 0; i < 3; i++) {
-        priceAdapter.add(_price(398));
+        for (var i = 0; i < 3; i++) {
+          priceAdapter.add(_price(398));
+          await _flush();
+        }
+
+        expect(coordinator.currentState, ScanState.noProduct);
+        await _flush(550);
+        expect(coordinator.currentState, ScanState.scanning);
+
+        barcodeAdapter.add(_barcode);
         await _flush();
-      }
 
-      expect(coordinator.currentState, ScanState.noProduct);
-      await _flush(550);
-      expect(coordinator.currentState, ScanState.scanning);
-
-      barcodeAdapter.add(_barcode);
-      await _flush();
-
-      expect(coordinator.currentState, ScanState.waitingPrice);
-    });
+        expect(coordinator.currentState, ScanState.waitingPrice);
+      },
+    );
 
     test('result dismissal allows a real second scan session', () async {
       final controller = ScanScreenController(coordinator: coordinator)..init();
