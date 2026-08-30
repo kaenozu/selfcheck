@@ -85,8 +85,9 @@ class CameraRecognitionPipeline extends ChangeNotifier {
   void disablePrice() => _priceEnabled = false;
 
   Future<void> _onCameraImage(CameraImage image) async {
-    if (_disposed || _processing || (!_barcodeEnabled && !_priceEnabled))
+    if (_disposed || _processing || (!_barcodeEnabled && !_priceEnabled)) {
       return;
+    }
 
     final now = DateTime.now();
     if (now.difference(_lastProcessed) < const Duration(milliseconds: 220)) {
