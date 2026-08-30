@@ -3,7 +3,7 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
-        android:label="selfcheck_jibun_check"
+        android:label="自分値"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
