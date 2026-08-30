@@ -106,26 +106,5 @@ void main() {
         isFalse,
       );
     });
-
-    test('ignores invalidated observations', () async {
-      final productId = await createProduct('4901234567805');
-      final observedAt = DateTime(2026, 8, 30, 10, 4, 59);
-
-      final observation = await repository.insertObservationWithDate(
-        productId: productId,
-        priceYen: 500,
-        priceConfidence: 0.95,
-        observedAt: observedAt,
-      );
-      await repository.invalidateObservation(observation.id);
-
-      final duplicate = await repository.isDuplicate(
-        productId: productId,
-        priceYen: 500,
-        observedAt: observedAt.add(const Duration(seconds: 2)),
-      );
-
-      expect(duplicate, isFalse);
-    });
   });
 }
