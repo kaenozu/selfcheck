@@ -8,6 +8,7 @@ import 'infrastructure/camera_recognition_pipeline.dart';
 import 'infrastructure/database/app_database.dart';
 import 'infrastructure/price_repository.dart';
 import 'infrastructure/price_repository_impl.dart';
+import 'presentation/camera_unavailable_view.dart';
 import 'presentation/scan_screen.dart';
 import 'presentation/scan_screen_controller.dart';
 
@@ -61,6 +62,9 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
   late final ScanCoordinator _coordinator;
   late final ScanScreenController _controller;
 
+  Future<void>? _cameraRecoveryTask;
+  Future<void>? _cameraSuspendTask;
+
   @override
   void initState() {
     super.initState();
@@ -76,22 +80,64 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
       priceAdapter: CameraPriceOcrAdapter(_cameraPipeline),
     );
     _controller = ScanScreenController(coordinator: _coordinator);
-    unawaited(_initializeCamera());
+    unawaited(_ensureCameraReady());
   }
 
-  Future<void> _initializeCamera() async {
-    try {
-      await _cameraPipeline.initialize();
-    } on Object {
-      // CameraPreviewSurface exposes the unavailable/permission-denied state.
-      // Returning from Settings triggers AppLifecycleState.resumed and retries.
+  Future<void> _ensureCameraReady() async {
+    final suspendTask = _cameraSuspendTask;
+    if (suspendTask != null) {
+      try {
+        await suspendTask;
+      } on Object {
+        // CameraRecognitionPipeline already exposes/logs the relevant failure.
+      }
     }
+
+    final activeRecovery = _cameraRecoveryTask;
+    if (activeRecovery != null) {
+      try {
+        await activeRecovery;
+      } on Object {
+        // Continue below so a stale/failed recovery can be retried once.
+      }
+      if (_cameraPipeline.isReady) return;
+    }
+
+    if (_cameraPipeline.isReady) return;
+
+    late final Future<void> recoveryTask;
+    recoveryTask = _cameraPipeline.resumeCamera().whenComplete(() {
+      if (identical(_cameraRecoveryTask, recoveryTask)) {
+        _cameraRecoveryTask = null;
+      }
+    });
+    _cameraRecoveryTask = recoveryTask;
+
+    try {
+      await recoveryTask;
+    } on Object {
+      // CameraUnavailableView keeps the failure visible and offers an explicit
+      // retry after permission changes or transient camera failures.
+    }
+  }
+
+  void _suspendCamera() {
+    if (_cameraSuspendTask != null) return;
+
+    late final Future<void> suspendTask;
+    suspendTask = _cameraPipeline.suspendCamera().whenComplete(() {
+      if (identical(_cameraSuspendTask, suspendTask)) {
+        _cameraSuspendTask = null;
+      }
+    });
+    _cameraSuspendTask = suspendTask;
+    unawaited(suspendTask);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_resumeCamera());
+      unawaited(_ensureCameraReady());
       return;
     }
 
@@ -100,16 +146,7 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.detached) {
       _coordinator.cancelScan();
-      unawaited(_cameraPipeline.suspendCamera());
-    }
-  }
-
-  Future<void> _resumeCamera() async {
-    try {
-      await _cameraPipeline.resumeCamera();
-    } on Object {
-      // The preview keeps the failure visible. A later Settings round-trip can
-      // retry again without creating a second ScanCoordinator subscription.
+      _suspendCamera();
     }
   }
 
@@ -127,7 +164,15 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
   Widget build(BuildContext context) {
     return ScanScreen(
       controller: _controller,
-      cameraPreview: CameraPreviewSurface(pipeline: _cameraPipeline),
+      cameraPreview: AnimatedBuilder(
+        animation: _cameraPipeline,
+        builder: (context, _) {
+          if (_cameraPipeline.initializationError != null) {
+            return CameraUnavailableView(onRetry: _ensureCameraReady);
+          }
+          return CameraPreviewSurface(pipeline: _cameraPipeline);
+        },
+      ),
     );
   }
 }
