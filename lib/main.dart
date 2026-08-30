@@ -100,7 +100,11 @@ class _ScanScreenEntryState extends State<ScanScreenEntry>
       } on Object {
         // Join the existing attempt. A later explicit retry may start a new one.
       }
-      return;
+      if (_cameraPipeline.isReady || _cameraPipeline.isCameraActive) {
+        return;
+      }
+      // A suspend invalidated that recovery. Continue with a fresh foreground
+      // recovery instead of leaving the preview in a permanent loading state.
     }
 
     if (_cameraPipeline.isReady) return;
