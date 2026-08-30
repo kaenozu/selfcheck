@@ -1,0 +1,297 @@
+name: Camera retry hardening once
+
+on:
+  push:
+    branches:
+      - feat/real-camera-jan-ocr-clean
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      - name: Apply retry and initialization guards
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/infrastructure/camera_recognition_pipeline.dart')
+          text = path.read_text()
+
+          text = text.replace(
+              '  Object? _initializationError;\n  DateTime _lastProcessed',
+              '  Object? _initializationError;\n  Future<void>? _initializationTask;\n  DateTime _lastProcessed',
+          )
+
+          start = text.index('  Future<void> initialize() async {')
+          end = text.index('\n  /// Releases the camera', start)
+          replacement = '''  Future<void> initialize() {
+            if (_disposed || !_cameraActive || isReady) return Future.value();
+
+            final activeTask = _initializationTask;
+            if (activeTask != null) return activeTask;
+
+            late final Future<void> task;
+            task = _initializeCamera().whenComplete(() {
+              if (identical(_initializationTask, task)) {
+                _initializationTask = null;
+              }
+            });
+            _initializationTask = task;
+            return task;
+          }
+
+          Future<void> _initializeCamera() async {
+            final generation = ++_cameraGeneration;
+            CameraController? controller;
+            try {
+              _initializationError = null;
+              final cameras = await availableCameras();
+              if (!_isCurrentCameraOperation(generation)) return;
+              if (cameras.isEmpty) {
+                throw StateError('No camera is available on this device.');
+              }
+
+              _camera = cameras.firstWhere(
+                (camera) => camera.lensDirection == CameraLensDirection.back,
+                orElse: () => cameras.first,
+              );
+              controller = CameraController(
+                _camera!,
+                ResolutionPreset.medium,
+                enableAudio: false,
+                imageFormatGroup: Platform.isAndroid
+                    ? ImageFormatGroup.nv21
+                    : ImageFormatGroup.bgra8888,
+              );
+              _cameraController = controller;
+
+              await controller.initialize();
+              if (!_isCurrentCameraOperation(generation)) {
+                if (identical(_cameraController, controller)) {
+                  _cameraController = null;
+                }
+                await _disposeCameraController(controller);
+                return;
+              }
+
+              await controller.startImageStream(
+                (image) => _onCameraImage(image, generation),
+              );
+              if (!_isCurrentCameraOperation(generation)) {
+                if (identical(_cameraController, controller)) {
+                  _cameraController = null;
+                }
+                await _disposeCameraController(controller);
+                return;
+              }
+
+              notifyListeners();
+            } on Object catch (error) {
+              if (controller != null) {
+                if (identical(_cameraController, controller)) {
+                  _cameraController = null;
+                }
+                await _disposeCameraController(controller);
+              }
+
+              if (!_disposed && _cameraActive && generation == _cameraGeneration) {
+                _initializationError = error;
+                notifyListeners();
+                rethrow;
+              }
+            }
+          }
+'''
+          text = text[:start] + replacement + text[end:]
+
+          text = text.replace(
+              '''  Future<void> resumeCamera() async {
+            if (_disposed) return;
+            _cameraActive = true;
+            await initialize();
+          }''',
+              '''  Future<void> resumeCamera() async {
+            if (_disposed) return;
+            _cameraActive = true;
+            await initialize();
+            if (!_disposed && _cameraActive && !isReady) {
+              await initialize();
+            }
+          }''',
+          )
+
+          text = text.replace(
+              '''        if (pipeline.initializationError != null) {
+                return const ColoredBox(
+                  color: Color(0xFF1A1A2E),
+                  child: Center(
+                    child: Icon(
+                      Icons.no_photography,
+                      size: 72,
+                      color: Colors.white30,
+                    ),
+                  ),
+                );
+              }''',
+              '''        if (pipeline.initializationError != null) {
+                return CameraUnavailableSurface(onRetry: pipeline.resumeCamera);
+              }''',
+          )
+
+          if 'class CameraUnavailableSurface extends StatefulWidget' not in text:
+              text += '''
+
+          class CameraUnavailableSurface extends StatefulWidget {
+            const CameraUnavailableSurface({super.key, required this.onRetry});
+
+            final Future<void> Function() onRetry;
+
+            @override
+            State<CameraUnavailableSurface> createState() =>
+                _CameraUnavailableSurfaceState();
+          }
+
+          class _CameraUnavailableSurfaceState
+              extends State<CameraUnavailableSurface> {
+            bool _retrying = false;
+
+            Future<void> _retry() async {
+              if (_retrying) return;
+              setState(() => _retrying = true);
+              try {
+                await widget.onRetry();
+              } on Object {
+                // Keep the unavailable state visible. The user can retry after
+                // changing camera permissions or after a transient failure.
+              } finally {
+                if (mounted) {
+                  setState(() => _retrying = false);
+                }
+              }
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return ColoredBox(
+                color: const Color(0xFF1A1A2E),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.no_photography,
+                          size: 72,
+                          color: Colors.white30,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'カメラを利用できません。権限を確認して再試行してください。',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _retrying ? null : _retry,
+                          icon: _retrying
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.refresh),
+                          label: Text(_retrying ? '再試行中…' : '再試行'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+          '''
+
+          path.write_text(text)
+
+          test = Path('test/widget/camera_unavailable_surface_test.dart')
+          test.write_text('''import 'dart:async';
+
+          import 'package:flutter/material.dart';
+          import 'package:flutter_test/flutter_test.dart';
+          import 'package:selfcheck_jibun_check/infrastructure/camera_recognition_pipeline.dart';
+
+          void main() {
+            testWidgets('camera unavailable surface retries once while pending', (
+              tester,
+            ) async {
+              final retryCompleter = Completer<void>();
+              var retryCount = 0;
+
+              await tester.pumpWidget(
+                MaterialApp(
+                  home: CameraUnavailableSurface(
+                    onRetry: () {
+                      retryCount++;
+                      return retryCompleter.future;
+                    },
+                  ),
+                ),
+              );
+
+              expect(find.textContaining('カメラを利用できません'), findsOneWidget);
+              expect(find.text('再試行'), findsOneWidget);
+
+              await tester.tap(find.text('再試行'));
+              await tester.pump();
+              expect(retryCount, 1);
+              expect(find.text('再試行中…'), findsOneWidget);
+
+              await tester.tap(find.byType(FilledButton));
+              await tester.pump();
+              expect(retryCount, 1);
+
+              retryCompleter.complete();
+              await tester.pumpAndSettle();
+              expect(find.text('再試行'), findsOneWidget);
+            });
+          }
+          ''')
+          PY
+
+      - name: Format touched Dart files
+        run: dart format lib/infrastructure/camera_recognition_pipeline.dart test/widget/camera_unavailable_surface_test.dart
+
+      - name: Run focused widget test
+        run: |
+          flutter pub get
+          flutter test test/widget/camera_unavailable_surface_test.dart --reporter expanded
+
+      - name: Commit source changes
+        shell: bash
+        run: |
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/infrastructure/camera_recognition_pipeline.dart test/widget/camera_unavailable_surface_test.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git commit -m 'fix: add camera retry recovery (#37)'
+          git push origin HEAD:feat/real-camera-jan-ocr-clean
