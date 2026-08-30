@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'domain/scan_state.dart';
-import 'infrastructure/database/app_database.dart';
-import 'infrastructure/price_repository_impl.dart';
-import 'infrastructure/price_repository.dart';
+
 import 'application/compare_use_case.dart';
 import 'application/scan_coordinator.dart';
+import 'infrastructure/camera_recognition_pipeline.dart';
+import 'infrastructure/database/app_database.dart';
+import 'infrastructure/price_repository.dart';
+import 'infrastructure/price_repository_impl.dart';
 import 'presentation/scan_screen.dart';
 import 'presentation/scan_screen_controller.dart';
 
@@ -41,7 +44,7 @@ class SelfCheckApp extends StatelessWidget {
   }
 }
 
-/// Entry point that wires up all dependencies
+/// Entry point that wires the device-local camera/recognition pipeline.
 class ScanScreenEntry extends StatefulWidget {
   const ScanScreenEntry({super.key});
 
@@ -53,6 +56,7 @@ class _ScanScreenEntryState extends State<ScanScreenEntry> {
   late final AppDatabase _database;
   late final PriceRepository _repository;
   late final CompareUseCase _compareUseCase;
+  late final CameraRecognitionPipeline _cameraPipeline;
   late final ScanCoordinator _coordinator;
   late final ScanScreenController _controller;
 
@@ -62,51 +66,40 @@ class _ScanScreenEntryState extends State<ScanScreenEntry> {
     _database = AppDatabase();
     _repository = PriceRepositoryImpl(_database);
     _compareUseCase = CompareUseCase(_repository);
+    _cameraPipeline = CameraRecognitionPipeline();
     _coordinator = ScanCoordinator(
       repository: _repository,
       compareUseCase: _compareUseCase,
-      barcodeAdapter: _StubBarcodeAdapter(),
-      priceAdapter: _StubPriceOcrAdapter(),
+      barcodeAdapter: CameraBarcodeAdapter(_cameraPipeline),
+      priceAdapter: CameraPriceOcrAdapter(_cameraPipeline),
     );
-    _controller = ScanScreenController(
-      coordinator: _coordinator,
-    );
+    _controller = ScanScreenController(coordinator: _coordinator);
+    unawaited(_initializeCamera());
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      await _cameraPipeline.initialize();
+    } on Object {
+      // The preview exposes the unavailable/permission-denied state. Starting a
+      // scan remains harmless because no recognition events are produced.
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _coordinator.dispose();
+    _cameraPipeline.dispose();
     _repository.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScanScreen(controller: _controller);
+    return ScanScreen(
+      controller: _controller,
+      cameraPreview: CameraPreviewSurface(pipeline: _cameraPipeline),
+    );
   }
-}
-
-/// Stub barcode adapter - will be replaced with real camera/ML Kit
-class _StubBarcodeAdapter implements BarcodeRecognizerAdapter {
-  @override
-  Stream<BarcodeCandidate> get results => const Stream.empty();
-
-  @override
-  void pause() {}
-
-  @override
-  void resume() {}
-}
-
-/// Stub price OCR adapter - will be replaced with real OCR
-class _StubPriceOcrAdapter implements PriceOcrAdapter {
-  @override
-  Stream<PriceCandidate> get results => const Stream.empty();
-
-  @override
-  void pause() {}
-
-  @override
-  void resume() {}
 }
