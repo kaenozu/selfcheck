@@ -1,7 +1,7 @@
 import '../domain/scan_state.dart';
 
 final RegExp _pricePattern = RegExp(
-  r'(?:[¥￥]\s*)?([0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?',
+  r'(?<![0-9])(?:[¥￥]\s*)?([0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?(?![0-9])',
 );
 
 /// Parses a plausible retail price from OCR text without guessing values.
