@@ -49,7 +49,9 @@ class PriceObservations extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => [{duplicateKey}];
+  List<Set<Column>> get uniqueKeys => [
+    {duplicateKey},
+  ];
 }
 
 @DriftDatabase(tables: [ProductIdentitys, PriceObservations])
@@ -98,8 +100,9 @@ class AppDatabase extends _$AppDatabase {
   // ========== ProductIdentity CRUD ==========
 
   Future<ProductIdentity?> findProductByJan(String jan) async {
-    return (select(productIdentitys)..where((t) => t.jan.equals(jan)))
-        .getSingleOrNull();
+    return (select(
+      productIdentitys,
+    )..where((t) => t.jan.equals(jan))).getSingleOrNull();
   }
 
   Future<ProductIdentity> insertProvisionalProduct(String jan) async {
@@ -115,20 +118,16 @@ class AppDatabase extends _$AppDatabase {
 
     await into(productIdentitys).insert(entity);
 
-    return ProductIdentity(
-      id: id,
-      jan: jan,
-      createdAt: now,
-      updatedAt: now,
-    );
+    return ProductIdentity(id: id, jan: jan, createdAt: now, updatedAt: now);
   }
 
   Future<void> updateProductDisplayName(String id, String name) async {
-    await (update(productIdentitys)..where((t) => t.id.equals(id)))
-      .write(ProductIdentitysCompanion(
+    await (update(productIdentitys)..where((t) => t.id.equals(id))).write(
+      ProductIdentitysCompanion(
         displayName: Value(name),
         updatedAt: Value(DateTime.now()),
-      ));
+      ),
+    );
   }
 
   // ========== PriceObservation CRUD ==========
@@ -179,19 +178,19 @@ class AppDatabase extends _$AppDatabase {
     final window = observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000);
     final duplicateKey = '$productId:$priceYen:$window';
 
-    final rows = await (select(priceObservations)
-      ..where((t) => t.duplicateKey.equals(duplicateKey))
-      ..where((t) => t.isValid.equals(true))
-    ).get();
+    final rows =
+        await (select(priceObservations)
+              ..where((t) => t.duplicateKey.equals(duplicateKey))
+              ..where((t) => t.isValid.equals(true)))
+            .get();
 
     return rows.isNotEmpty;
   }
 
   Future<void> invalidateObservation(String id) async {
-    await (update(priceObservations)..where((t) => t.id.equals(id)))
-      .write(const PriceObservationsCompanion(
-        isValid: Value(false),
-      ));
+    await (update(priceObservations)..where((t) => t.id.equals(id))).write(
+      const PriceObservationsCompanion(isValid: Value(false)),
+    );
   }
 
   /// Insert an observation with a specific observedAt date (for testing).
@@ -228,8 +227,7 @@ class AppDatabase extends _$AppDatabase {
     bool? isCouponPriceVisible,
     bool? isBulkDiscount,
   }) async {
-    final id =
-        'obs-$productId-${observedAt.microsecondsSinceEpoch}-$priceYen';
+    final id = 'obs-$productId-${observedAt.microsecondsSinceEpoch}-$priceYen';
     final duplicateKey =
         '$productId:$priceYen:${observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000)}';
 
@@ -248,14 +246,13 @@ class AppDatabase extends _$AppDatabase {
 
     // duplicateKey defines intentional five-minute duplicate suppression.
     // Any other constraint failure must not be reported as a successful insert.
-    await into(priceObservations).insert(
-      entity,
-      mode: InsertMode.insertOrIgnore,
-    );
+    await into(
+      priceObservations,
+    ).insert(entity, mode: InsertMode.insertOrIgnore);
 
-    final persisted = await (select(priceObservations)
-          ..where((t) => t.duplicateKey.equals(duplicateKey)))
-        .getSingleOrNull();
+    final persisted = await (select(
+      priceObservations,
+    )..where((t) => t.duplicateKey.equals(duplicateKey))).getSingleOrNull();
     if (persisted == null) {
       throw StateError('Price observation insert was not persisted');
     }

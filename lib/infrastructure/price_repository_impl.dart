@@ -109,14 +109,16 @@ Future<PriceRepositoryImpl> createTestRepository() async {
     'prod-2': 'TEST_AC05_PRODUCT_2',
     'brand-new-product': 'TEST_AC11_FIRST_PRICE',
   }.entries) {
-    await db.into(db.productIdentitys).insert(
-      ProductIdentitysCompanion.insert(
-        id: fixture.key,
-        jan: fixture.value,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
+    await db
+        .into(db.productIdentitys)
+        .insert(
+          ProductIdentitysCompanion.insert(
+            id: fixture.key,
+            jan: fixture.value,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
   }
 
   return PriceRepositoryImpl(db);

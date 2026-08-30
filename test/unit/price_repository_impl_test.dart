@@ -20,7 +20,9 @@ void main() {
 
     group('createProvisionalProduct', () {
       test('creates product with generated id', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
         expect(product.id, startsWith('prod-'));
         expect(product.jan, '4901234567890');
       });
@@ -77,49 +79,55 @@ void main() {
         expect(observation.isBulkDiscount, true);
       });
 
-      test('returns the actually persisted row when suppressing a duplicate', () async {
-        final productId = await createProduct('4901234567890');
-        final observedAt = DateTime(2026, 8, 30, 9, 0);
-        final first = await repository.insertObservationWithDate(
-          productId: productId,
-          priceYen: 500,
-          priceConfidence: 0.95,
-          observedAt: observedAt,
-        );
-        final duplicate = await repository.insertObservationWithDate(
-          productId: productId,
-          priceYen: 500,
-          priceConfidence: 0.50,
-          observedAt: observedAt.add(const Duration(minutes: 1)),
-        );
+      test(
+        'returns the actually persisted row when suppressing a duplicate',
+        () async {
+          final productId = await createProduct('4901234567890');
+          final observedAt = DateTime(2026, 8, 30, 9, 0);
+          final first = await repository.insertObservationWithDate(
+            productId: productId,
+            priceYen: 500,
+            priceConfidence: 0.95,
+            observedAt: observedAt,
+          );
+          final duplicate = await repository.insertObservationWithDate(
+            productId: productId,
+            priceYen: 500,
+            priceConfidence: 0.50,
+            observedAt: observedAt.add(const Duration(minutes: 1)),
+          );
 
-        expect(duplicate.id, first.id);
-        expect(duplicate.observedAt, first.observedAt);
-        expect(duplicate.priceConfidence, first.priceConfidence);
-      });
+          expect(duplicate.id, first.id);
+          expect(duplicate.observedAt, first.observedAt);
+          expect(duplicate.priceConfidence, first.priceConfidence);
+        },
+      );
 
-      test('same timestamp and price for different products both persist', () async {
-        final productA = await createProduct('4901234567890');
-        final productB = await createProduct('4901234567891');
-        final observedAt = DateTime(2026, 8, 30, 9, 0);
+      test(
+        'same timestamp and price for different products both persist',
+        () async {
+          final productA = await createProduct('4901234567890');
+          final productB = await createProduct('4901234567891');
+          final observedAt = DateTime(2026, 8, 30, 9, 0);
 
-        final a = await repository.insertObservationWithDate(
-          productId: productA,
-          priceYen: 500,
-          priceConfidence: 0.9,
-          observedAt: observedAt,
-        );
-        final b = await repository.insertObservationWithDate(
-          productId: productB,
-          priceYen: 500,
-          priceConfidence: 0.9,
-          observedAt: observedAt,
-        );
+          final a = await repository.insertObservationWithDate(
+            productId: productA,
+            priceYen: 500,
+            priceConfidence: 0.9,
+            observedAt: observedAt,
+          );
+          final b = await repository.insertObservationWithDate(
+            productId: productB,
+            priceYen: 500,
+            priceConfidence: 0.9,
+            observedAt: observedAt,
+          );
 
-        expect(a.id, isNot(b.id));
-        expect(a.productId, productA);
-        expect(b.productId, productB);
-      });
+          expect(a.id, isNot(b.id));
+          expect(a.productId, productA);
+          expect(b.productId, productB);
+        },
+      );
     });
 
     group('getValidObservations', () {
