@@ -117,7 +117,10 @@ void main() {
       expect(controller.uiState.scanState, ScanState.idle);
 
       controller.startScan();
+      // Coordinator state changes synchronously; controller state is delivered
+      // through the broadcast state stream on the next event-loop turn.
       expect(coordinator.currentState, ScanState.scanning);
+      await _flush();
       expect(controller.uiState.scanState, ScanState.scanning);
 
       barcodeAdapter.add(_barcode);
