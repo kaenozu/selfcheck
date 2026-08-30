@@ -73,4 +73,11 @@ void main() {
     expect(parsePriceText([(text: '1個当たり 50円', region: region)]), isNull);
     expect(parsePriceText([(text: '1本あたり ￥80', region: region)]), isNull);
   });
+
+  test('keeps a normal price followed by package weight', () {
+    final result = parsePriceText([(text: '税込 ¥398 100g', region: region)]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
 }
