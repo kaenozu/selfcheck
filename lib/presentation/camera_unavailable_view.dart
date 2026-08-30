@@ -37,11 +37,7 @@ class _CameraUnavailableViewState extends State<CameraUnavailableView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.no_photography,
-                size: 72,
-                color: Colors.white30,
-              ),
+              const Icon(Icons.no_photography, size: 72, color: Colors.white30),
               const SizedBox(height: 16),
               const Text(
                 'カメラを利用できません。カメラ権限を確認してから再試行してください。',
