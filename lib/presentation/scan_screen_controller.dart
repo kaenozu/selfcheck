@@ -77,7 +77,7 @@ class ScanScreenController extends ChangeNotifier {
     _resultSubscription = _coordinator.resultStream.listen((result) {
       _uiState = _uiState.copyWith(
         comparisonResult: result,
-        janCode: _extractJanCode(result),
+        janCode: _coordinator.resultJanCode,
         currentPriceYen: result.currentPrice,
       );
       notifyListeners();
@@ -99,13 +99,6 @@ class ScanScreenController extends ChangeNotifier {
     }
 
     notifyListeners();
-  }
-
-  /// Extract JAN code from the comparison result context
-  /// (Currently not available from ComparisonResult — will be wired when
-  /// ScanCoordinator exposes product info alongside the result)
-  String? _extractJanCode(ComparisonResult result) {
-    return _uiState.janCode;
   }
 
   /// Start a new scan session.
