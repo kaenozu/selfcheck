@@ -28,6 +28,10 @@ class ScanCoordinator {
   String? _lastError;
   String? get lastError => _lastError;
 
+  /// JAN associated with the currently displayed completed result.
+  String? _lastCompletedJan;
+  String? get lastCompletedJan => _lastCompletedJan;
+
   /// Cached barcode candidate while waiting for a stable price.
   BarcodeCandidate? _pendingBarcode;
 
@@ -63,6 +67,7 @@ class ScanCoordinator {
 
     _cancelSubscriptions();
     _resetRecognitionContext();
+    _lastCompletedJan = null;
     _barcodeAdapter.resume();
     _priceAdapter.resume();
 
@@ -114,6 +119,7 @@ class ScanCoordinator {
     _sessionGeneration++;
     _cancelSubscriptions();
     _resetRecognitionContext();
+    _lastCompletedJan = null;
     _barcodeAdapter.pause();
     _priceAdapter.pause();
     _lastError = null;
@@ -215,6 +221,7 @@ class ScanCoordinator {
       );
       if (!_isCurrentSession(generation)) return;
 
+      _lastCompletedJan = barcode.barcode;
       _resultController.add(result);
       _cancelSubscriptions();
       _resetRecognitionContext();
@@ -239,6 +246,7 @@ class ScanCoordinator {
 
     final message = _friendlyErrorMessage(error);
     _lastError = message;
+    _lastCompletedJan = null;
     _errorController.add(message);
 
     _cancelSubscriptions();
@@ -309,6 +317,7 @@ class ScanCoordinator {
     _sessionGeneration++;
     _cancelSubscriptions();
     _resetRecognitionContext();
+    _lastCompletedJan = null;
     _stateController.close();
     _resultController.close();
     _errorController.close();
