@@ -41,9 +41,8 @@ class CompareUseCase {
       return ComparisonResult.firstPrice(currentPriceYen);
     }
 
-    // Calculate median
     final prices = observations.map((o) => o.priceYen).toList()..sort();
-    final median = prices[prices.length ~/ 2];
+    final median = _medianYen(prices);
 
     if (observations.length < 3) {
       return ComparisonResult.historyShort(
@@ -53,7 +52,6 @@ class CompareUseCase {
       );
     }
 
-    // Calculate diff
     final diffYen = currentPriceYen - median;
     final diffRate = median > 0 ? diffYen / median : 0.0;
     final label = ComparisonPolicy.labelForDiffRate(diffRate);
@@ -66,5 +64,20 @@ class CompareUseCase {
       label: label,
       observationCount: observations.length,
     );
+  }
+
+  /// Returns the mathematical median rounded to the nearest whole yen.
+  ///
+  /// For an even number of observations, the midpoint of the two center values
+  /// is used. A .5 yen midpoint rounds up because prices are non-negative.
+  int _medianYen(List<int> sortedPrices) {
+    final middle = sortedPrices.length ~/ 2;
+    if (sortedPrices.length.isOdd) {
+      return sortedPrices[middle];
+    }
+
+    final lower = sortedPrices[middle - 1];
+    final upper = sortedPrices[middle];
+    return ((lower + upper) / 2).round();
   }
 }
