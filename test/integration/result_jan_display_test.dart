@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:selfcheck_jibun_check/application/compare_use_case.dart';
 import 'package:selfcheck_jibun_check/application/scan_coordinator.dart';
 import 'package:selfcheck_jibun_check/domain/scan_state.dart';
-import 'package:selfcheck_jibun_check/infrastructure/price_repository.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository_impl.dart';
 import 'package:selfcheck_jibun_check/presentation/scan_screen_controller.dart';
 
