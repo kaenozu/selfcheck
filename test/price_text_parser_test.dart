@@ -53,4 +53,24 @@ void main() {
     expect(parsePriceText([(text: '￥0円', region: region)]), isNull);
     expect(parsePriceText([(text: '￥100,000円', region: region)]), isNull);
   });
+
+  test('prefers product price over a marked per-weight unit price', () {
+    final result = parsePriceText([
+      (text: '398', region: region),
+      (text: '100g当たり ¥198', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
+
+  test('rejects slash-form unit price without a product price', () {
+    expect(parsePriceText([(text: '¥198/100g', region: region)]), isNull);
+    expect(parsePriceText([(text: '￥198／100ml', region: region)]), isNull);
+  });
+
+  test('rejects per-item unit price without a product price', () {
+    expect(parsePriceText([(text: '1個当たり 50円', region: region)]), isNull);
+    expect(parsePriceText([(text: '1本あたり ￥80', region: region)]), isNull);
+  });
 }
