@@ -29,6 +29,32 @@ void main() {
     expect(parsePriceText([(text: '商品 398', region: region)]), isNull);
   });
 
+  test('ignores a marked unit price and keeps the retail price', () {
+    final result = parsePriceText([
+      (text: '398', region: region),
+      (text: '100g当たり ¥198', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+    expect(result.confidence, 0.70);
+  });
+
+  test('rejects slash-style unit price when it is the only candidate', () {
+    expect(parsePriceText([(text: '¥198/100g', region: region)]), isNull);
+  });
+
+  test('rejects per-item unit price when it is the only candidate', () {
+    expect(parsePriceText([(text: '1個当たり 50円', region: region)]), isNull);
+  });
+
+  test('does not reject a normal price merely followed by package weight', () {
+    final result = parsePriceText([(text: '税込 ¥398 100g', region: region)]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
+
   test('prefers the larger OCR region for equally ranked bare prices', () {
     const smallRegion = Rect(left: 0, top: 0, right: 20, bottom: 10);
     const largeRegion = Rect(left: 0, top: 0, right: 80, bottom: 40);
