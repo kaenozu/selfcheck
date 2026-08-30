@@ -24,6 +24,25 @@ void main() {
     expect(result.confidence, 0.70);
   });
 
+  test('rejects bare numbers embedded in non-price text', () {
+    expect(parsePriceText([(text: '在庫 12', region: region)]), isNull);
+    expect(parsePriceText([(text: '商品 398', region: region)]), isNull);
+  });
+
+  test('prefers the larger OCR region for equally ranked bare prices', () {
+    const smallRegion = Rect(left: 0, top: 0, right: 20, bottom: 10);
+    const largeRegion = Rect(left: 0, top: 0, right: 80, bottom: 40);
+
+    final result = parsePriceText([
+      (text: '398', region: smallRegion),
+      (text: '980', region: largeRegion),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 980);
+    expect(result.region, largeRegion);
+  });
+
   test('does not reinterpret JAN/EAN-length text as a price', () {
     final result = parsePriceText([(text: '4901234567894', region: region)]);
 
