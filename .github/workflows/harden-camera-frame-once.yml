@@ -1,0 +1,168 @@
+name: Harden camera frame generation once
+
+on:
+  push:
+    branches:
+      - feat/real-camera-jan-ocr-clean
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      - name: Apply generation guard and parser regressions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          camera_path = Path('lib/infrastructure/camera_recognition_pipeline.dart')
+          text = camera_path.read_text()
+          text = text.replace(
+              '      await controller.startImageStream(_onCameraImage);',
+              """      await controller.startImageStream(
+                (image) => _onCameraImage(image, generation),
+              );""",
+          )
+          text = text.replace(
+              '    _cameraGeneration++;\n    _processing = false;\n\n    final controller = _cameraController;',
+              '    _cameraGeneration++;\n\n    final controller = _cameraController;',
+          )
+
+          start = text.index('  Future<void> _onCameraImage(')
+          end = text.index('\n  InputImage? _toInputImage', start)
+          replacement = r'''  Future<void> _onCameraImage(CameraImage image, int generation) async {
+            if (!_isCurrentCameraOperation(generation) ||
+                _processing ||
+                (!_barcodeEnabled && !_priceEnabled)) {
+              return;
+            }
+
+            final now = DateTime.now();
+            if (now.difference(_lastProcessed) < const Duration(milliseconds: 220)) {
+              return;
+            }
+            _lastProcessed = now;
+            _processing = true;
+            try {
+              final inputImage = _toInputImage(image);
+              if (inputImage == null || !_isCurrentCameraOperation(generation)) {
+                return;
+              }
+
+              if (_barcodeEnabled) {
+                final barcodes = await _barcodeScanner.processImage(inputImage);
+                if (!_isCurrentCameraOperation(generation) || !_barcodeEnabled) {
+                  return;
+                }
+                for (final barcode in barcodes) {
+                  final candidate = _toBarcodeCandidate(barcode);
+                  if (candidate != null && !_barcodeResults.isClosed) {
+                    _barcodeResults.add(candidate);
+                    break;
+                  }
+                }
+              }
+
+              if (_priceEnabled && _isCurrentCameraOperation(generation)) {
+                final recognizedText = await _textRecognizer.processImage(inputImage);
+                if (!_isCurrentCameraOperation(generation) || !_priceEnabled) {
+                  return;
+                }
+                final candidate = parsePriceText(
+                  recognizedText.blocks.expand(
+                    (block) => block.lines.map(
+                      (line) => (
+                        text: line.text,
+                        region: Rect(
+                          left: line.boundingBox.left,
+                          top: line.boundingBox.top,
+                          right: line.boundingBox.right,
+                          bottom: line.boundingBox.bottom,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+                if (candidate != null && !_priceResults.isClosed) {
+                  _priceResults.add(candidate);
+                }
+              }
+            } on Object catch (error, stackTrace) {
+              debugPrint('CameraRecognitionPipeline frame failed: $error');
+              debugPrint('$stackTrace');
+            } finally {
+              _processing = false;
+            }
+          }
+'''
+          text = text[:start] + replacement + text[end:]
+          camera_path.write_text(text)
+
+          test_path = Path('test/price_text_parser_test.dart')
+          tests = test_path.read_text()
+          marker = '\n}\n'
+          addition = r'''
+
+            test('rejects bare numbers embedded in non-price text', () {
+              expect(parsePriceText([(text: '在庫 12', region: region)]), isNull);
+              expect(parsePriceText([(text: '商品 398', region: region)]), isNull);
+            });
+
+            test('prefers the larger OCR region for equally ranked bare prices', () {
+              const smallRegion = Rect(left: 0, top: 0, right: 20, bottom: 10);
+              const largeRegion = Rect(left: 0, top: 0, right: 80, bottom: 40);
+
+              final result = parsePriceText([
+                (text: '398', region: smallRegion),
+                (text: '980', region: largeRegion),
+              ]);
+
+              expect(result, isNotNull);
+              expect(result!.priceYen, 980);
+              expect(result.region, largeRegion);
+            });
+'''
+          if addition.strip() not in tests:
+              pos = tests.rfind(marker)
+              if pos == -1:
+                  raise SystemExit('test file closing brace not found')
+              tests = tests[:pos] + addition + tests[pos:]
+          test_path.write_text(tests)
+          PY
+
+      - name: Format changed Dart files
+        run: dart format lib/infrastructure/camera_recognition_pipeline.dart test/price_text_parser_test.dart
+
+      - name: Run focused parser tests
+        run: |
+          flutter pub get
+          flutter test test/price_text_parser_test.dart --reporter expanded
+
+      - name: Commit hardening
+        shell: bash
+        run: |
+          git diff --check
+          if git diff --quiet -- lib/infrastructure/camera_recognition_pipeline.dart test/price_text_parser_test.dart; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/infrastructure/camera_recognition_pipeline.dart test/price_text_parser_test.dart
+          git commit -m 'fix: discard stale camera frame results (#1)'
+          git push origin HEAD:feat/real-camera-jan-ocr-clean
