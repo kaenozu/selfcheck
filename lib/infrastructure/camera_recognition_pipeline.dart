@@ -49,6 +49,7 @@ class CameraRecognitionPipeline extends ChangeNotifier {
   Stream<PriceCandidate> get priceResults => _priceResults.stream;
   CameraController? get cameraController => _cameraController;
   bool get isReady => _cameraController?.value.isInitialized ?? false;
+  bool get isCameraActive => _cameraActive;
   Object? get initializationError => _initializationError;
 
   Future<void> initialize() async {
