@@ -14,7 +14,7 @@ class ScanScreen extends StatefulWidget {
   const ScanScreen({
     super.key,
     required this.controller,
-    required this.cameraPreview,
+    this.cameraPreview = const SizedBox.shrink(),
   });
 
   @override
