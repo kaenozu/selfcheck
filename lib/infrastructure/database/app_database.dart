@@ -205,7 +205,8 @@ class AppDatabase extends _$AppDatabase {
     // duplicate slot so a corrected observation can be stored in the same
     // five-minute bucket. Including the immutable row id keeps this idempotent
     // and collision-resistant without a schema migration.
-    final retiredDuplicateKey = '${observation.duplicateKey}:invalid:${observation.id}';
+    final retiredDuplicateKey =
+        '${observation.duplicateKey}:invalid:${observation.id}';
     await (update(priceObservations)..where((t) => t.id.equals(id))).write(
       PriceObservationsCompanion(
         isValid: const Value(false),
