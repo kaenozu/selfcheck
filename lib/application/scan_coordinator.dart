@@ -47,28 +47,13 @@ class ScanCoordinator {
   StreamSubscription<BarcodeCandidate>? _barcodeSubscription;
   StreamSubscription<PriceCandidate>? _priceSubscription;
 
-  factory ScanCoordinator({
-    required PriceRepository repository,
-    required CompareUseCase compareUseCase,
+  ScanCoordinator({
+    required this._repository,
+    required this._compareUseCase,
     PriceStabilizer? stabilizer,
-    required BarcodeRecognizerAdapter barcodeAdapter,
-    required PriceOcrAdapter priceAdapter,
-  }) =>
-      ScanCoordinator._(
-        repository,
-        compareUseCase,
-        stabilizer ?? PriceStabilizer(),
-        barcodeAdapter,
-        priceAdapter,
-      );
-
-  ScanCoordinator._(
-    this._repository,
-    this._compareUseCase,
-    this._stabilizer,
-    this._barcodeAdapter,
-    this._priceAdapter,
-  );
+    required this._barcodeAdapter,
+    required this._priceAdapter,
+  }) : _stabilizer = stabilizer ?? PriceStabilizer();
 
   void startScan() {
     if (_state != ScanState.idle && _state != ScanState.error) return;
