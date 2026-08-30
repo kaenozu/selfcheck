@@ -66,9 +66,7 @@ class ScanScreenController extends ChangeNotifier {
   ScanScreenUiState _uiState = const ScanScreenUiState();
   ScanScreenUiState get uiState => _uiState;
 
-  ScanScreenController({
-    required this._coordinator,
-  });
+  ScanScreenController({required this._coordinator});
 
   /// Initialize and start listening to coordinator state/result/error streams
   void init() {

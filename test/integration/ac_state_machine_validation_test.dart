@@ -16,11 +16,11 @@ const _barcode = BarcodeCandidate(
 );
 
 PriceCandidate _price(int value) => PriceCandidate(
-      priceYen: value,
-      confidence: 0.9,
-      region: _region,
-      rawTexts: ['$value'],
-    );
+  priceYen: value,
+  confidence: 0.9,
+  region: _region,
+  rawTexts: ['$value'],
+);
 
 Future<void> _flush([int milliseconds = 30]) =>
     Future<void>.delayed(Duration(milliseconds: milliseconds));
@@ -51,34 +51,37 @@ void main() {
       await priceAdapter.close();
     });
 
-    test('AC-02 barcode-first waits for a stable price before result', () async {
-      coordinator.startScan();
+    test(
+      'AC-02 barcode-first waits for a stable price before result',
+      () async {
+        coordinator.startScan();
 
-      barcodeAdapter.add(_barcode);
-      await _flush();
-      expect(coordinator.currentState, ScanState.waitingPrice);
+        barcodeAdapter.add(_barcode);
+        await _flush();
+        expect(coordinator.currentState, ScanState.waitingPrice);
 
-      priceAdapter.add(_price(398));
-      await _flush();
-      expect(coordinator.currentState, ScanState.waitingPrice);
+        priceAdapter.add(_price(398));
+        await _flush();
+        expect(coordinator.currentState, ScanState.waitingPrice);
 
-      priceAdapter.add(_price(398));
-      await _flush();
-      expect(coordinator.currentState, ScanState.waitingPrice);
+        priceAdapter.add(_price(398));
+        await _flush();
+        expect(coordinator.currentState, ScanState.waitingPrice);
 
-      priceAdapter.add(_price(398));
-      await _flush(100);
-      expect(coordinator.currentState, ScanState.result);
+        priceAdapter.add(_price(398));
+        await _flush(100);
+        expect(coordinator.currentState, ScanState.result);
 
-      final product = await repository.findProductByJan(_barcode.barcode);
-      expect(product, isNotNull);
-      final observations = await repository.getValidObservations(
-        productId: product!.id,
-        since: DateTime.now().subtract(const Duration(minutes: 1)),
-        limit: 10,
-      );
-      expect(observations.map((observation) => observation.priceYen), [398]);
-    });
+        final product = await repository.findProductByJan(_barcode.barcode);
+        expect(product, isNotNull);
+        final observations = await repository.getValidObservations(
+          productId: product!.id,
+          since: DateTime.now().subtract(const Duration(minutes: 1)),
+          limit: 10,
+        );
+        expect(observations.map((observation) => observation.priceYen), [398]);
+      },
+    );
 
     test('AC-12 rejects a transient wrong OCR value before barcode', () async {
       coordinator.startScan();

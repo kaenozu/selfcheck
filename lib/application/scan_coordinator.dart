@@ -76,22 +76,12 @@ class ScanCoordinator {
         try {
           _onBarcodeDetected(barcode, generation);
         } catch (error, stackTrace) {
-          _handleAdapterError(
-            'バーコード処理エラー',
-            error,
-            stackTrace,
-            generation,
-          );
+          _handleAdapterError('バーコード処理エラー', error, stackTrace, generation);
         }
       },
       onError: (Object error, StackTrace stackTrace) {
         if (!_isCurrentSession(generation)) return;
-        _handleAdapterError(
-          'バーコード認識ストリームエラー',
-          error,
-          stackTrace,
-          generation,
-        );
+        _handleAdapterError('バーコード認識ストリームエラー', error, stackTrace, generation);
       },
     );
 
@@ -101,22 +91,12 @@ class ScanCoordinator {
         try {
           unawaited(_onPriceDetected(price, generation));
         } catch (error, stackTrace) {
-          _handleAdapterError(
-            '価格OCR処理エラー',
-            error,
-            stackTrace,
-            generation,
-          );
+          _handleAdapterError('価格OCR処理エラー', error, stackTrace, generation);
         }
       },
       onError: (Object error, StackTrace stackTrace) {
         if (!_isCurrentSession(generation)) return;
-        _handleAdapterError(
-          '価格OCRストリームエラー',
-          error,
-          stackTrace,
-          generation,
-        );
+        _handleAdapterError('価格OCRストリームエラー', error, stackTrace, generation);
       },
     );
   }
@@ -149,12 +129,14 @@ class ScanCoordinator {
 
     final stablePrice = _stabilizer.stablePrice;
     if (stablePrice != null) {
-      unawaited(_compare(
-        barcode,
-        stablePrice,
-        _stabilizer.stableConfidence,
-        generation,
-      ));
+      unawaited(
+        _compare(
+          barcode,
+          stablePrice,
+          _stabilizer.stableConfidence,
+          generation,
+        ),
+      );
       return;
     }
 
@@ -164,10 +146,7 @@ class ScanCoordinator {
     _priceAdapter.resume();
   }
 
-  Future<void> _onPriceDetected(
-    PriceCandidate price,
-    int generation,
-  ) async {
+  Future<void> _onPriceDetected(PriceCandidate price, int generation) async {
     if (!_isCurrentSession(generation)) return;
     if (_state != ScanState.scanning && _state != ScanState.waitingPrice) {
       return;
