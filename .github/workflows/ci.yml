@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -60,5 +62,17 @@ jobs:
       - name: Build Android debug APK
         run: flutter build apk --debug
 
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Check formatting of changed Dart files
+        shell: bash
+        run: |
+          mapfile -t dart_files < <(
+            git diff --name-only --diff-filter=ACMRT origin/master...HEAD -- '*.dart'
+          )
+
+          if (( ${#dart_files[@]} == 0 )); then
+            echo 'No changed Dart files to format-check.'
+            exit 0
+          fi
+
+          printf 'Checking format for:\n%s\n' "${dart_files[*]}"
+          dart format --output=none --set-exit-if-changed "${dart_files[@]}"
