@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import '../domain/scan_state.dart';
-import '../domain/comparison_result.dart';
+
 import '../application/scan_coordinator.dart';
+import '../domain/comparison_result.dart';
+import '../domain/scan_state.dart';
 
 /// UI-facing state for the scan screen
 class ScanScreenUiState {
@@ -41,16 +43,19 @@ class ScanScreenUiState {
   }
 
   /// Whether the scan button should be enabled
-  bool get canStartScan => scanState == ScanState.idle || scanState == ScanState.error;
+  bool get canStartScan =>
+      scanState == ScanState.idle || scanState == ScanState.error;
   bool get isScanning =>
       scanState == ScanState.scanning || scanState == ScanState.waitingPrice;
   bool get isShowingResult => scanState == ScanState.result;
   bool get isError => scanState == ScanState.error;
 }
 
-/// ChangeNotifier that exposes scan screen state to widgets
+/// ChangeNotifier that exposes scan screen state to widgets.
 ///
-/// Listens to ScanCoordinator for state changes and comparison results.
+/// Scan state transitions are sourced from [ScanCoordinator]. The controller
+/// does not optimistically invent a scanning state before the coordinator has
+/// actually accepted a new session.
 class ScanScreenController extends ChangeNotifier {
   final ScanCoordinator _coordinator;
 
@@ -61,9 +66,7 @@ class ScanScreenController extends ChangeNotifier {
   ScanScreenUiState _uiState = const ScanScreenUiState();
   ScanScreenUiState get uiState => _uiState;
 
-  ScanScreenController({
-    required this._coordinator,
-  });
+  ScanScreenController({required this._coordinator});
 
   /// Initialize and start listening to coordinator state/result/error streams
   void init() {
@@ -102,28 +105,25 @@ class ScanScreenController extends ChangeNotifier {
   /// (Currently not available from ComparisonResult — will be wired when
   /// ScanCoordinator exposes product info alongside the result)
   String? _extractJanCode(ComparisonResult result) {
-    // Preserve existing janCode if we already have one
     return _uiState.janCode;
   }
 
-  /// Start a new scan session
+  /// Start a new scan session.
   void startScan() {
     if (!_uiState.canStartScan) return;
-
-    _uiState = const ScanScreenUiState(scanState: ScanState.scanning);
-    notifyListeners();
     _coordinator.startScan();
   }
 
-  /// Cancel the current scan
+  /// Cancel the current scan.
   void cancelScan() {
     _coordinator.cancelScan();
     _uiState = const ScanScreenUiState();
     notifyListeners();
   }
 
-  /// Dismiss the result and return to idle
+  /// Dismiss the result and return both UI and coordinator to idle.
   void dismissResult() {
+    _coordinator.resetToIdle();
     _uiState = const ScanScreenUiState();
     notifyListeners();
   }
