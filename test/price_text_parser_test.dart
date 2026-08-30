@@ -25,9 +25,7 @@ void main() {
   });
 
   test('does not reinterpret JAN/EAN-length text as a price', () {
-    final result = parsePriceText([
-      (text: '4901234567894', region: region),
-    ]);
+    final result = parsePriceText([(text: '4901234567894', region: region)]);
 
     expect(result, isNull);
   });

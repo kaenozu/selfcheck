@@ -9,9 +9,7 @@ final RegExp _pricePattern = RegExp(
 /// Currency-marked candidates are preferred. Bare numbers are accepted only in
 /// the 1..99,999 yen range; JAN/EAN-length values are therefore never treated
 /// as prices.
-PriceCandidate? parsePriceText(
-  Iterable<({String text, Rect region})> lines,
-) {
+PriceCandidate? parsePriceText(Iterable<({String text, Rect region})> lines) {
   _ParsedPrice? best;
 
   for (final line in lines) {
@@ -23,7 +21,8 @@ PriceCandidate? parsePriceText(
       if (value == null || value < 1 || value > 99999) continue;
 
       final matchedText = match.group(0) ?? raw;
-      final hasCurrencyMarker = matchedText.contains('¥') ||
+      final hasCurrencyMarker =
+          matchedText.contains('¥') ||
           matchedText.contains('￥') ||
           matchedText.contains('円');
       final candidate = _ParsedPrice(

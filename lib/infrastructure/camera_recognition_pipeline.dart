@@ -19,13 +19,13 @@ import 'price_text_parser.dart';
 /// flight to avoid unbounded frame queues.
 class CameraRecognitionPipeline extends ChangeNotifier {
   CameraRecognitionPipeline()
-      : _barcodeScanner = ml_barcode.BarcodeScanner(
-          formats: const [
-            ml_barcode.BarcodeFormat.ean13,
-            ml_barcode.BarcodeFormat.ean8,
-          ],
-        ),
-        _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    : _barcodeScanner = ml_barcode.BarcodeScanner(
+        formats: const [
+          ml_barcode.BarcodeFormat.ean13,
+          ml_barcode.BarcodeFormat.ean8,
+        ],
+      ),
+      _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
   final ml_barcode.BarcodeScanner _barcodeScanner;
   final TextRecognizer _textRecognizer;
@@ -64,8 +64,9 @@ class CameraRecognitionPipeline extends ChangeNotifier {
         _camera!,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup:
-            Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
       _cameraController = controller;
       await controller.initialize();
@@ -84,7 +85,8 @@ class CameraRecognitionPipeline extends ChangeNotifier {
   void disablePrice() => _priceEnabled = false;
 
   Future<void> _onCameraImage(CameraImage image) async {
-    if (_disposed || _processing || (!_barcodeEnabled && !_priceEnabled)) return;
+    if (_disposed || _processing || (!_barcodeEnabled && !_priceEnabled))
+      return;
 
     final now = DateTime.now();
     if (now.difference(_lastProcessed) < const Duration(milliseconds: 220)) {
@@ -141,7 +143,10 @@ class CameraRecognitionPipeline extends ChangeNotifier {
     final controller = _cameraController;
     if (camera == null || controller == null) return null;
 
-    final rotation = _inputImageRotation(camera, controller.value.deviceOrientation);
+    final rotation = _inputImageRotation(
+      camera,
+      controller.value.deviceOrientation,
+    );
     if (rotation == null) return null;
 
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
@@ -181,7 +186,8 @@ class CameraRecognitionPipeline extends ChangeNotifier {
     final compensation = orientations[deviceOrientation];
     if (compensation == null) return null;
 
-    final rotationCompensation = camera.lensDirection == CameraLensDirection.front
+    final rotationCompensation =
+        camera.lensDirection == CameraLensDirection.front
         ? (camera.sensorOrientation + compensation) % 360
         : (camera.sensorOrientation - compensation + 360) % 360;
     return InputImageRotationValue.fromRawValue(rotationCompensation);
@@ -287,7 +293,11 @@ class CameraPreviewSurface extends StatelessWidget {
           return const ColoredBox(
             color: Color(0xFF1A1A2E),
             child: Center(
-              child: Icon(Icons.no_photography, size: 72, color: Colors.white30),
+              child: Icon(
+                Icons.no_photography,
+                size: 72,
+                color: Colors.white30,
+              ),
             ),
           );
         }

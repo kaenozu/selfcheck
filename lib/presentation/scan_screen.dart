@@ -210,11 +210,7 @@ class _ScanScreenState extends State<ScanScreen>
           border: Border.all(color: Colors.white, width: 4),
           color: Colors.white.withValues(alpha: 0.2),
         ),
-        child: const Icon(
-          Icons.qr_code_scanner,
-          size: 36,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.qr_code_scanner, size: 36, color: Colors.white),
       ),
     );
   }

@@ -33,10 +33,7 @@ void main() {
     test('exposes stablePrice after 3 consecutive identical readings', () {
       expect(stabilizer.submit(candidate(100)), isFalse);
       expect(stabilizer.submit(candidate(100)), isFalse);
-      expect(
-        stabilizer.submit(candidate(100, confidence: 0.87)),
-        isTrue,
-      );
+      expect(stabilizer.submit(candidate(100, confidence: 0.87)), isTrue);
 
       expect(stabilizer.stablePrice, 100);
       expect(stabilizer.stableConfidence, 0.87);
