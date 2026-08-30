@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+
 import '../domain/scan_state.dart';
 import 'scan_screen_controller.dart';
-import 'widgets/scan_overlay.dart';
-import 'widgets/result_card.dart';
 import 'widgets/price_context_badges.dart';
+import 'widgets/result_card.dart';
+import 'widgets/scan_overlay.dart';
 
-/// Main scan screen - camera preview with state-driven overlay and result card
+/// Main scan screen - camera preview with state-driven overlay and result card.
 class ScanScreen extends StatefulWidget {
   final ScanScreenController controller;
+  final Widget cameraPreview;
 
-  const ScanScreen({super.key, required this.controller});
+  const ScanScreen({
+    super.key,
+    required this.controller,
+    this.cameraPreview = const SizedBox.shrink(),
+  });
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -50,38 +56,14 @@ class _ScanScreenState extends State<ScanScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Camera preview (placeholder)
-          _buildCameraPlaceholder(),
-
-          // Scan frame guide
+          widget.cameraPreview,
           if (state.isScanning) _buildScanGuide(),
-
-          // State-driven overlay
           ScanOverlay(scanState: state.scanState),
-
-          // Result card (bottom sheet style)
           if (state.isShowingResult && state.comparisonResult != null)
             _buildResultOverlay(state),
-
-          // Top bar
           _buildTopBar(state),
-
-          // Bottom controls
           _buildBottomControls(state),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCameraPlaceholder() {
-    return Container(
-      color: const Color(0xFF1A1A2E),
-      child: const Center(
-        child: Icon(
-          Icons.videocam_off,
-          size: 80,
-          color: Colors.white12,
-        ),
       ),
     );
   }
@@ -155,33 +137,42 @@ class _ScanScreenState extends State<ScanScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Error message
               if (state.isError && state.errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.redAccent,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             state.errorMessage!,
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-              // Status text
               if (state.scanState == ScanState.waitingPrice)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 12),
@@ -190,10 +181,7 @@ class _ScanScreenState extends State<ScanScreen>
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ),
-
-              // Scan button (also shown in error state for retry)
               if (state.canStartScan) _buildScanButton(),
-
               if (state.isShowingResult) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -222,11 +210,7 @@ class _ScanScreenState extends State<ScanScreen>
           border: Border.all(color: Colors.white, width: 4),
           color: Colors.white.withValues(alpha: 0.2),
         ),
-        child: const Icon(
-          Icons.qr_code_scanner,
-          size: 36,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.qr_code_scanner, size: 36, color: Colors.white),
       ),
     );
   }
@@ -250,7 +234,6 @@ class _ScanScreenState extends State<ScanScreen>
               controller: scrollController,
               padding: const EdgeInsets.only(top: 8),
               children: [
-                // Handle bar
                 Center(
                   child: Container(
                     width: 40,
@@ -262,8 +245,6 @@ class _ScanScreenState extends State<ScanScreen>
                     ),
                   ),
                 ),
-
-                // Price context badges
                 if (state.comparisonResult != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -272,8 +253,6 @@ class _ScanScreenState extends State<ScanScreen>
                       isMemberPriceVisible: false,
                     ),
                   ),
-
-                // Result card
                 ResultCard(
                   result: state.comparisonResult!,
                   janCode: state.janCode,
@@ -283,7 +262,6 @@ class _ScanScreenState extends State<ScanScreen>
                     widget.controller.startScan();
                   },
                 ),
-
                 const SizedBox(height: 16),
               ],
             ),
