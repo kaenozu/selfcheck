@@ -98,5 +98,26 @@ class PriceRepositoryImpl implements PriceRepository {
 /// Use this in tests to get the same SQL behavior as production.
 Future<PriceRepositoryImpl> createTestRepository() async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
+  final now = DateTime.now();
+
+  // AC-05/AC-11 predate foreign-key enforcement and intentionally use stable
+  // product IDs to focus on duplicate-window and first-price behavior. Seed
+  // only those parent rows in the test-only database so the acceptance tests
+  // exercise production FK semantics instead of relying on orphan fixtures.
+  for (final fixture in const {
+    'prod-1': 'TEST_AC05_PRODUCT_1',
+    'prod-2': 'TEST_AC05_PRODUCT_2',
+    'brand-new-product': 'TEST_AC11_FIRST_PRICE',
+  }.entries) {
+    await db.into(db.productIdentitys).insert(
+      ProductIdentitysCompanion.insert(
+        id: fixture.key,
+        jan: fixture.value,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
+
   return PriceRepositoryImpl(db);
 }
