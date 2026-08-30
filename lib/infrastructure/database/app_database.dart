@@ -175,16 +175,24 @@ class AppDatabase extends _$AppDatabase {
     required int priceYen,
     required DateTime observedAt,
   }) async {
-    final window = observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000);
-    final duplicateKey = '$productId:$priceYen:$window';
+    final windowStart = observedAt.subtract(const Duration(minutes: 5));
 
-    final rows =
+    // A duplicate window is relative to the candidate observation time, not to
+    // fixed wall-clock buckets. This catches boundary cases such as 10:04:59 ->
+    // 10:05:01 while still ignoring future observations when historical test
+    // data is inserted out of chronological order.
+    final duplicate =
         await (select(priceObservations)
-              ..where((t) => t.duplicateKey.equals(duplicateKey))
-              ..where((t) => t.isValid.equals(true)))
-            .get();
+              ..where((t) => t.productId.equals(productId))
+              ..where((t) => t.priceYen.equals(priceYen))
+              ..where((t) => t.isValid.equals(true))
+              ..where((t) => t.observedAt.isBiggerOrEqualValue(windowStart))
+              ..where((t) => t.observedAt.isSmallerOrEqualValue(observedAt))
+              ..orderBy([(t) => OrderingTerm.desc(t.observedAt)])
+              ..limit(1))
+            .getSingleOrNull();
 
-    return rows.isNotEmpty;
+    return duplicate != null;
   }
 
   Future<void> invalidateObservation(String id) async {
@@ -244,7 +252,8 @@ class AppDatabase extends _$AppDatabase {
       isBulkDiscount: Value(isBulkDiscount),
     );
 
-    // duplicateKey defines intentional five-minute duplicate suppression.
+    // duplicateKey remains a last-resort same-bucket concurrency guard. The
+    // production duplicate decision is the rolling-window query in isDuplicate.
     // Any other constraint failure must not be reported as a successful insert.
     await into(
       priceObservations,
