@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:selfcheck_jibun_check/domain/comparison_result.dart';
+import 'package:selfcheck_jibun_check/domain/comparison_result.dart' as domain;
 import 'package:selfcheck_jibun_check/presentation/widgets/result_card.dart';
 
 void main() {
@@ -11,7 +11,7 @@ void main() {
       MaterialApp(
         theme: ThemeData.dark(),
         home: Scaffold(
-          body: ResultCard(result: ComparisonResult.firstPrice(398)),
+          body: ResultCard(result: domain.ComparisonResult.firstPrice(398)),
         ),
       ),
     );
