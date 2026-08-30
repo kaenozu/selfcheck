@@ -9,9 +9,11 @@ class ScanOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: _buildOverlay(context),
+    return IgnorePointer(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _buildOverlay(context),
+      ),
     );
   }
 
