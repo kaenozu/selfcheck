@@ -26,9 +26,7 @@ void main() {
       barcodeAdapter: _StubBarcodeAdapter(),
       priceAdapter: _StubPriceOcrAdapter(),
     );
-    controller = ScanScreenController(
-      coordinator: coordinator,
-    );
+    controller = ScanScreenController(coordinator: coordinator);
   });
 
   tearDown(() {
@@ -38,15 +36,14 @@ void main() {
   });
 
   Widget buildTestApp({Widget? child}) {
-    return MaterialApp(
-      home: child ?? ScanScreen(controller: controller),
-    );
+    return MaterialApp(home: child ?? ScanScreen(controller: controller));
   }
 
   group('ScanScreen', () {
     testWidgets('shows idle overlay initially', (tester) async {
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(); // Use pump() not pumpAndSettle() to avoid animation timeout
+      await tester
+          .pump(); // Use pump() not pumpAndSettle() to avoid animation timeout
 
       expect(find.text('タップしてスキャン開始'), findsOneWidget);
       expect(find.text('自分値スキャン'), findsOneWidget);
@@ -65,11 +62,11 @@ void main() {
     testWidgets('shows firstPrice result correctly', (tester) async {
       final result = domain.ComparisonResult.firstPrice(398);
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(result: result),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ResultCard(result: result)),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('¥398'), findsOneWidget);
@@ -86,11 +83,11 @@ void main() {
         observationCount: 5,
       );
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(result: result),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ResultCard(result: result)),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('¥398'), findsOneWidget);
@@ -110,11 +107,11 @@ void main() {
         observationCount: 4,
       );
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(result: result),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: ResultCard(result: result)),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('高い'), findsOneWidget);
@@ -124,14 +121,13 @@ void main() {
     testWidgets('shows janCode when provided', (tester) async {
       final result = domain.ComparisonResult.firstPrice(398);
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(
-            result: result,
-            janCode: '4901234567890',
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ResultCard(result: result, janCode: '4901234567890'),
           ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('4901234567890'), findsOneWidget);
@@ -141,14 +137,13 @@ void main() {
       bool dismissed = false;
       final result = domain.ComparisonResult.firstPrice(398);
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(
-            result: result,
-            onDismiss: () => dismissed = true,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ResultCard(result: result, onDismiss: () => dismissed = true),
           ),
         ),
-      ));
+      );
       await tester.pump();
 
       await tester.tap(find.text('閉じる'));
@@ -159,14 +154,16 @@ void main() {
       bool scanAgain = false;
       final result = domain.ComparisonResult.firstPrice(398);
 
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: ResultCard(
-            result: result,
-            onScanAgain: () => scanAgain = true,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ResultCard(
+              result: result,
+              onScanAgain: () => scanAgain = true,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
 
       await tester.tap(find.text('スキャン'));
@@ -176,22 +173,29 @@ void main() {
 
   group('LabelColors', () {
     test('symbolForLabel returns correct symbols', () {
-      expect(LabelColors.symbolForLabel(domain.ComparisonLabel.veryCheap), '▼▼');
+      expect(
+        LabelColors.symbolForLabel(domain.ComparisonLabel.veryCheap),
+        '▼▼',
+      );
       expect(LabelColors.symbolForLabel(domain.ComparisonLabel.cheap), '▼');
       expect(LabelColors.symbolForLabel(domain.ComparisonLabel.normal), '─');
-      expect(LabelColors.symbolForLabel(domain.ComparisonLabel.slightlyExpensive), '▲');
-      expect(LabelColors.symbolForLabel(domain.ComparisonLabel.expensive), '▲▲');
+      expect(
+        LabelColors.symbolForLabel(domain.ComparisonLabel.slightlyExpensive),
+        '▲',
+      );
+      expect(
+        LabelColors.symbolForLabel(domain.ComparisonLabel.expensive),
+        '▲▲',
+      );
       expect(LabelColors.symbolForLabel(null), '');
     });
   });
 
   group('PriceContextBadges', () {
     testWidgets('shows no badges when all null', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: PriceContextBadges(),
-        ),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: PriceContextBadges())),
+      );
       await tester.pump();
 
       expect(find.byType(PriceContextBadges), findsOneWidget);
@@ -200,26 +204,30 @@ void main() {
     });
 
     testWidgets('shows SALE badge when isSaleVisible is true', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: PriceContextBadges(isSaleVisible: true),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: PriceContextBadges(isSaleVisible: true)),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('SALE'), findsOneWidget);
     });
 
-    testWidgets('shows multiple badges when multiple flags true', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: PriceContextBadges(
-            isSaleVisible: true,
-            isMemberPriceVisible: true,
-            isBulkDiscount: true,
+    testWidgets('shows multiple badges when multiple flags true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PriceContextBadges(
+              isSaleVisible: true,
+              isMemberPriceVisible: true,
+              isBulkDiscount: true,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.text('SALE'), findsOneWidget);

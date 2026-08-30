@@ -18,7 +18,9 @@ void main() {
 
     group('createProvisionalProduct', () {
       test('should create product with generated id', () async {
-        final product = await repository.createProvisionalProduct('4901234567890');
+        final product = await repository.createProvisionalProduct(
+          '4901234567890',
+        );
 
         expect(product.id, startsWith('prod-'));
         expect(product.jan, '4901234567890');
@@ -33,19 +35,22 @@ void main() {
     });
 
     group('insertObservation', () {
-      test('should insert observation and return it with generated id', () async {
-        final observation = await repository.insertObservation(
-          productId: 'prod-123',
-          priceYen: 500,
-          priceConfidence: 0.95,
-        );
+      test(
+        'should insert observation and return it with generated id',
+        () async {
+          final observation = await repository.insertObservation(
+            productId: 'prod-123',
+            priceYen: 500,
+            priceConfidence: 0.95,
+          );
 
-        expect(observation.id, startsWith('obs-'));
-        expect(observation.productId, 'prod-123');
-        expect(observation.priceYen, 500);
-        expect(observation.priceConfidence, 0.95);
-        expect(observation.isValid, true);
-      });
+          expect(observation.id, startsWith('obs-'));
+          expect(observation.productId, 'prod-123');
+          expect(observation.priceYen, 500);
+          expect(observation.priceConfidence, 0.95);
+          expect(observation.isValid, true);
+        },
+      );
 
       test('should set price context booleans when provided', () async {
         final observation = await repository.insertObservation(

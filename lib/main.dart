@@ -68,9 +68,7 @@ class _ScanScreenEntryState extends State<ScanScreenEntry> {
       barcodeAdapter: _StubBarcodeAdapter(),
       priceAdapter: _StubPriceOcrAdapter(),
     );
-    _controller = ScanScreenController(
-      coordinator: _coordinator,
-    );
+    _controller = ScanScreenController(coordinator: _coordinator);
   }
 
   @override

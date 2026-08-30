@@ -77,11 +77,7 @@ class _ScanScreenState extends State<ScanScreen>
     return Container(
       color: const Color(0xFF1A1A2E),
       child: const Center(
-        child: Icon(
-          Icons.videocam_off,
-          size: 80,
-          color: Colors.white12,
-        ),
+        child: Icon(Icons.videocam_off, size: 80, color: Colors.white12),
       ),
     );
   }
@@ -160,20 +156,32 @@ class _ScanScreenState extends State<ScanScreen>
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.redAccent,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             state.errorMessage!,
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
@@ -222,11 +230,7 @@ class _ScanScreenState extends State<ScanScreen>
           border: Border.all(color: Colors.white, width: 4),
           color: Colors.white.withValues(alpha: 0.2),
         ),
-        child: const Icon(
-          Icons.qr_code_scanner,
-          size: 36,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.qr_code_scanner, size: 36, color: Colors.white),
       ),
     );
   }

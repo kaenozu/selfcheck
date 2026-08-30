@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 part 'app_database.g.dart';
 
 /// ProductIdentity table - JAN/GTIN as primary identifier
-/// 
+///
 /// Drift generates ProductIdentity data class from this table definition.
 class ProductIdentitys extends Table {
   @override
@@ -24,7 +24,7 @@ class ProductIdentitys extends Table {
 }
 
 /// PriceObservation table - price records with context booleans
-/// 
+///
 /// Drift generates PriceObservation data class from this table definition.
 /// Includes v0.2 price context booleans for future extensibility.
 class PriceObservations extends Table {
@@ -49,7 +49,9 @@ class PriceObservations extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => [{duplicateKey}];
+  List<Set<Column>> get uniqueKeys => [
+    {duplicateKey},
+  ];
 }
 
 @DriftDatabase(tables: [ProductIdentitys, PriceObservations])
@@ -70,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await customStatement('DROP TABLE IF EXISTS product_stats;');
-        
+
         await customStatement(
           'ALTER TABLE price_observation ADD COLUMN is_sale_visible INTEGER DEFAULT NULL;',
         );
@@ -83,7 +85,7 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE price_observation ADD COLUMN is_bulk_discount INTEGER DEFAULT NULL;',
         );
-        
+
         await customStatement('PRAGMA user_version = 2;');
       }
     },
@@ -92,37 +94,34 @@ class AppDatabase extends _$AppDatabase {
   // ========== ProductIdentity CRUD ==========
 
   Future<ProductIdentity?> findProductByJan(String jan) async {
-    return (select(productIdentitys)..where((t) => t.jan.equals(jan)))
-        .getSingleOrNull();
+    return (select(
+      productIdentitys,
+    )..where((t) => t.jan.equals(jan))).getSingleOrNull();
   }
 
   Future<ProductIdentity> insertProvisionalProduct(String jan) async {
     final now = DateTime.now();
     final id = 'prod-$jan-${now.millisecondsSinceEpoch}';
-    
+
     final entity = ProductIdentitysCompanion.insert(
       id: id,
       jan: jan,
       createdAt: now,
       updatedAt: now,
     );
-    
+
     await into(productIdentitys).insert(entity);
-    
-    return ProductIdentity(
-      id: id,
-      jan: jan,
-      createdAt: now,
-      updatedAt: now,
-    );
+
+    return ProductIdentity(id: id, jan: jan, createdAt: now, updatedAt: now);
   }
 
   Future<void> updateProductDisplayName(String id, String name) async {
-    await (update(productIdentitys)..where((t) => t.id.equals(id)))
-      .write(ProductIdentitysCompanion(
+    await (update(productIdentitys)..where((t) => t.id.equals(id))).write(
+      ProductIdentitysCompanion(
         displayName: Value(name),
         updatedAt: Value(DateTime.now()),
-      ));
+      ),
+    );
   }
 
   // ========== PriceObservation CRUD ==========
@@ -139,7 +138,7 @@ class AppDatabase extends _$AppDatabase {
       ..where((t) => t.observedAt.isBiggerThanValue(since))
       ..orderBy([(t) => OrderingTerm.desc(t.observedAt)])
       ..limit(limit);
-    
+
     return await query.get();
   }
 
@@ -154,8 +153,9 @@ class AppDatabase extends _$AppDatabase {
   }) async {
     final now = DateTime.now();
     final id = 'obs-${now.millisecondsSinceEpoch}-$priceYen';
-    final duplicateKey = '$productId:$priceYen:${now.millisecondsSinceEpoch ~/ (5 * 60 * 1000)}';
-    
+    final duplicateKey =
+        '$productId:$priceYen:${now.millisecondsSinceEpoch ~/ (5 * 60 * 1000)}';
+
     final entity = PriceObservationsCompanion.insert(
       id: id,
       productId: productId,
@@ -168,8 +168,10 @@ class AppDatabase extends _$AppDatabase {
       isCouponPriceVisible: Value(isCouponPriceVisible),
       isBulkDiscount: Value(isBulkDiscount),
     );
-    
-    await into(priceObservations).insert(entity, mode: InsertMode.insertOrIgnore);
+
+    await into(
+      priceObservations,
+    ).insert(entity, mode: InsertMode.insertOrIgnore);
 
     // Return the data directly (INSERT OR IGNORE may have dropped the row)
     return PriceObservation(
@@ -194,20 +196,20 @@ class AppDatabase extends _$AppDatabase {
   }) async {
     final window = observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000);
     final duplicateKey = '$productId:$priceYen:$window';
-    
-    final count = await (select(priceObservations)
-      ..where((t) => t.duplicateKey.equals(duplicateKey))
-      ..where((t) => t.isValid.equals(true))
-    ).get();
-    
+
+    final count =
+        await (select(priceObservations)
+              ..where((t) => t.duplicateKey.equals(duplicateKey))
+              ..where((t) => t.isValid.equals(true)))
+            .get();
+
     return count.isNotEmpty;
   }
 
   Future<void> invalidateObservation(String id) async {
-    await (update(priceObservations)..where((t) => t.id.equals(id)))
-      .write(const PriceObservationsCompanion(
-        isValid: Value(false),
-      ));
+    await (update(priceObservations)..where((t) => t.id.equals(id))).write(
+      const PriceObservationsCompanion(isValid: Value(false)),
+    );
   }
 
   /// Insert an observation with a specific observedAt date (for testing).
@@ -223,7 +225,8 @@ class AppDatabase extends _$AppDatabase {
     bool? isBulkDiscount,
   }) async {
     final id = 'obs-${observedAt.millisecondsSinceEpoch}-$priceYen';
-    final duplicateKey = '$productId:$priceYen:${observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000)}';
+    final duplicateKey =
+        '$productId:$priceYen:${observedAt.millisecondsSinceEpoch ~/ (5 * 60 * 1000)}';
 
     final entity = PriceObservationsCompanion.insert(
       id: id,
@@ -238,7 +241,9 @@ class AppDatabase extends _$AppDatabase {
       isBulkDiscount: Value(isBulkDiscount),
     );
 
-    await into(priceObservations).insert(entity, mode: InsertMode.insertOrIgnore);
+    await into(
+      priceObservations,
+    ).insert(entity, mode: InsertMode.insertOrIgnore);
 
     return PriceObservation(
       id: id,
