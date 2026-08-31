@@ -9,9 +9,11 @@ class ScanOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: _buildOverlay(context),
+    return IgnorePointer(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _buildOverlay(context),
+      ),
     );
   }
 
@@ -122,7 +124,11 @@ class _WaitingPriceOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline, size: 48, color: Colors.greenAccent),
+            Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.greenAccent,
+            ),
             SizedBox(height: 12),
             Text(
               'バーコード認識済み',
@@ -156,7 +162,11 @@ class _NoProductOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orangeAccent),
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 48,
+              color: Colors.orangeAccent,
+            ),
             SizedBox(height: 12),
             Text(
               'バーコードが見つかりません',
