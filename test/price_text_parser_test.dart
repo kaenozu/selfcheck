@@ -64,6 +64,11 @@ void main() {
     expect(result!.priceYen, 398);
   });
 
+  test('rejects tax-marked unit price without a product price', () {
+    expect(parsePriceText([(text: '100g当たり 税込198円', region: region)]), isNull);
+    expect(parsePriceText([(text: '1個当たり（税込）50円', region: region)]), isNull);
+  });
+
   test('rejects slash-form unit price without a product price', () {
     expect(parsePriceText([(text: '¥198/100g', region: region)]), isNull);
     expect(parsePriceText([(text: '￥198／100ml', region: region)]), isNull);
@@ -84,6 +89,15 @@ void main() {
   test('keeps tax-inclusive price when unit price shares one OCR line', () {
     final result = parsePriceText([
       (text: '税込 398円（100g当たり 198円）', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
+
+  test('keeps product price when unit price is also tax-marked', () {
+    final result = parsePriceText([
+      (text: '税込398円（100g当たり 税込198円）', region: region),
     ]);
 
     expect(result, isNotNull);
