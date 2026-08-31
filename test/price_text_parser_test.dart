@@ -81,6 +81,24 @@ void main() {
     expect(result!.priceYen, 398);
   });
 
+  test('keeps tax-inclusive price when unit price shares one OCR line', () {
+    final result = parsePriceText([
+      (text: '税込 398円（100g当たり 198円）', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
+
+  test('keeps product price before unit price in one OCR line', () {
+    final result = parsePriceText([
+      (text: '398円 / 100g当たり198円', region: region),
+    ]);
+
+    expect(result, isNotNull);
+    expect(result!.priceYen, 398);
+  });
+
   test('prefers tax-inclusive price over a larger tax-exclusive line', () {
     const largeRegion = Rect(left: 0, top: 0, right: 120, bottom: 40);
     const smallRegion = Rect(left: 0, top: 50, right: 70, bottom: 75);
@@ -96,7 +114,9 @@ void main() {
   });
 
   test('selects tax-inclusive value when both prices share one OCR line', () {
-    final result = parsePriceText([(text: '本体価格398円（税込429円）', region: region)]);
+    final result = parsePriceText([
+      (text: '本体価格398円（税込429円）', region: region),
+    ]);
 
     expect(result, isNotNull);
     expect(result!.priceYen, 429);
