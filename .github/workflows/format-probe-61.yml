@@ -1,0 +1,28 @@
+name: Format probe 61
+
+on:
+  push:
+    branches:
+      - probe/pr60-format-61
+
+permissions:
+  contents: read
+
+jobs:
+  format-probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - name: Show formatted test
+        run: |
+          dart format test/price_text_parser_test.dart
+          echo '---FORMATTED-FILE-BEGIN---'
+          cat test/price_text_parser_test.dart
+          echo '---FORMATTED-FILE-END---'
