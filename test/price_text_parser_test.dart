@@ -72,6 +72,8 @@ void main() {
   test('rejects slash-form unit price without a product price', () {
     expect(parsePriceText([(text: '¥198/100g', region: region)]), isNull);
     expect(parsePriceText([(text: '￥198／100ml', region: region)]), isNull);
+    expect(parsePriceText([(text: '税込198円/100g', region: region)]), isNull);
+    expect(parsePriceText([(text: '198円（税込）/100g', region: region)]), isNull);
   });
 
   test('rejects per-item unit price without a product price', () {
