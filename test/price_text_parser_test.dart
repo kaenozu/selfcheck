@@ -96,9 +96,7 @@ void main() {
   });
 
   test('selects tax-inclusive value when both prices share one OCR line', () {
-    final result = parsePriceText([
-      (text: '本体価格398円（税込429円）', region: region),
-    ]);
+    final result = parsePriceText([(text: '本体価格398円（税込429円）', region: region)]);
 
     expect(result, isNotNull);
     expect(result!.priceYen, 429);
