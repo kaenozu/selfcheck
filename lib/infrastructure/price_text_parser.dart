@@ -15,9 +15,11 @@ final RegExp _unitPriceAfterUnitPattern = RegExp(
   caseSensitive: false,
 );
 final RegExp _unitPriceSlashPattern = RegExp(
+  r'(?:[（(]?\s*(?:税込(?:価格)?|総額|支払総額|税抜(?:き|価格)?|税別|本体価格)\s*[）)]?\s*)?'
   r'(?:[¥￥]\s*)?'
   r'(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?'
-  r'\s*[/／]\s*[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック)',
+  r'\s*(?:[（(]?\s*(?:税込(?:価格)?|総額|支払総額|税抜(?:き|価格)?|税別|本体価格)\s*[）)]?\s*)?'
+  r'[/／]\s*[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック)',
   caseSensitive: false,
 );
 final RegExp _taxInclusiveAfterPattern = RegExp(
