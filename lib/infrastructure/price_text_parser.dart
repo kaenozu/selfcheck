@@ -9,6 +9,7 @@ final RegExp _barePriceLinePattern = RegExp(
 final RegExp _unitPriceAfterUnitPattern = RegExp(
   r'(?:[0-9]+\s*(?:g|kg|ml|l|個|本|枚|袋|パック))'
   r'\s*(?:当たり|あたり|当り|につき)\s*[:：]?\s*'
+  r'(?:[（(]?\s*(?:税込(?:価格)?|総額|支払総額|税抜(?:き|価格)?|税別|本体価格)\s*[）)]?\s*)?'
   r'(?:[¥￥]\s*)?'
   r'(?:[0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})(?:\s*円)?',
   caseSensitive: false,
