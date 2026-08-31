@@ -27,9 +27,7 @@ final RegExp _taxInclusiveBeforePattern = RegExp(
   r'(?:[¥￥]\s*)?([0-9]{1,3}(?:[,，][0-9]{3})+|[0-9]{1,5})'
   r'(?:\s*円)?\s*[（(]?\s*(?:税込(?:価格)?|総額|支払総額)\s*[）)]?',
 );
-final RegExp _taxExclusiveContextPattern = RegExp(
-  r'(?:税抜(?:き|価格)?|税別|本体価格)',
-);
+final RegExp _taxExclusiveContextPattern = RegExp(r'(?:税抜(?:き|価格)?|税別|本体価格)');
 
 /// Parses a plausible retail price from OCR text without guessing values.
 ///
@@ -111,7 +109,10 @@ _ParsedPrice? _parseTaxInclusiveCandidate({
   required String rawText,
   required Rect region,
 }) {
-  for (final pattern in [_taxInclusiveAfterPattern, _taxInclusiveBeforePattern]) {
+  for (final pattern in [
+    _taxInclusiveAfterPattern,
+    _taxInclusiveBeforePattern,
+  ]) {
     final match = pattern.firstMatch(text);
     final value = _parsePriceValue(match?.group(1));
     if (value == null) continue;
