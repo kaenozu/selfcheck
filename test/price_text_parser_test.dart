@@ -10,6 +10,7 @@ void main() {
       (text: '在庫 12', region: region),
       (text: '税込 ￥1,980円', region: region),
     ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 1980);
     expect(result.confidence, 0.90);
@@ -17,6 +18,7 @@ void main() {
 
   test('accepts a plausible bare price', () {
     final result = parsePriceText([(text: '398', region: region)]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
     expect(result.confidence, 0.70);
@@ -30,17 +32,21 @@ void main() {
   test('prefers the larger OCR region for equally ranked bare prices', () {
     const smallRegion = Rect(left: 0, top: 0, right: 20, bottom: 10);
     const largeRegion = Rect(left: 0, top: 0, right: 80, bottom: 40);
+
     final result = parsePriceText([
       (text: '398', region: smallRegion),
       (text: '980', region: largeRegion),
     ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 980);
     expect(result.region, largeRegion);
   });
 
   test('does not reinterpret JAN/EAN-length text as a price', () {
-    expect(parsePriceText([(text: '4901234567894', region: region)]), isNull);
+    final result = parsePriceText([(text: '4901234567894', region: region)]);
+
+    expect(result, isNull);
   });
 
   test('rejects zero and values above 99,999 yen', () {
@@ -53,6 +59,7 @@ void main() {
       (text: '398', region: region),
       (text: '100g当たり ¥198', region: region),
     ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
@@ -76,24 +83,34 @@ void main() {
 
   test('keeps a normal price followed by package weight', () {
     final result = parsePriceText([(text: '税込 ¥398 100g', region: region)]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
 
   test('keeps tax-inclusive price when unit price shares one OCR line', () {
-    final result = parsePriceText([(text: '税込 398円（100g当たり 198円）', region: region)]);
+    final result = parsePriceText([
+      (text: '税込 398円（100g当たり 198円）', region: region),
+    ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
 
   test('keeps product price when unit price is also tax-marked', () {
-    final result = parsePriceText([(text: '税込398円（100g当たり 税込198円）', region: region)]);
+    final result = parsePriceText([
+      (text: '税込398円（100g当たり 税込198円）', region: region),
+    ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
 
   test('keeps product price before unit price in one OCR line', () {
-    final result = parsePriceText([(text: '398円 / 100g当たり198円', region: region)]);
+    final result = parsePriceText([
+      (text: '398円 / 100g当たり198円', region: region),
+    ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 398);
   });
@@ -101,10 +118,12 @@ void main() {
   test('prefers tax-inclusive price over a larger tax-exclusive line', () {
     const largeRegion = Rect(left: 0, top: 0, right: 120, bottom: 40);
     const smallRegion = Rect(left: 0, top: 50, right: 70, bottom: 75);
+
     final result = parsePriceText([
       (text: '本体価格 398円', region: largeRegion),
       (text: '税込 429円', region: smallRegion),
     ]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 429);
     expect(result.region, smallRegion);
@@ -112,12 +131,14 @@ void main() {
 
   test('selects tax-inclusive value when both prices share one OCR line', () {
     final result = parsePriceText([(text: '本体価格398円（税込429円）', region: region)]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 429);
   });
 
   test('recognizes a price followed by an inclusive-tax marker', () {
     final result = parsePriceText([(text: '429円（税込）', region: region)]);
+
     expect(result, isNotNull);
     expect(result!.priceYen, 429);
   });
