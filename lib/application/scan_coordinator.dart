@@ -218,6 +218,7 @@ class ScanCoordinator {
         productId: product.id,
         currentConfidence: confidence,
         skipInsert: isDuplicate,
+        isSessionValid: () => _isCurrentSession(generation),
       );
       if (!_isCurrentSession(generation)) return;
 

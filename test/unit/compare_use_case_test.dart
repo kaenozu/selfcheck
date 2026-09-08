@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:selfcheck_jibun_check/application/compare_use_case.dart';
 import 'package:selfcheck_jibun_check/domain/comparison_result.dart' as domain;
 import 'package:selfcheck_jibun_check/infrastructure/price_repository.dart';
 import 'package:selfcheck_jibun_check/infrastructure/price_repository_impl.dart';
+import 'package:selfcheck_jibun_check/infrastructure/database/app_database.dart';
 
 /// Insert N observations spaced 6 minutes apart to avoid duplicateKey collisions.
 Future<void> insertObservationsSpaced(
@@ -229,6 +232,43 @@ void main() {
         expect(result.diffYen, -50);
         expect(result.label, domain.ComparisonLabel.veryCheap);
       });
+
+      test(
+        'does not insert when the session is cancelled before saving',
+        () async {
+          final product = await repository.createProvisionalProduct(
+            'CANCEL_BEFORE_INSERT',
+          );
+          final observationsReady = Completer<void>();
+          final gatedRepository = _GatedObservationsRepository(
+            repository,
+            observationsReady,
+          );
+          var sessionIsActive = true;
+
+          final comparison = CompareUseCase(gatedRepository).compare(
+            currentPriceYen: 500,
+            productId: product.id,
+            currentConfidence: 0.95,
+            isSessionValid: () => sessionIsActive,
+          );
+
+          await Future<void>.delayed(Duration.zero);
+          sessionIsActive = false;
+          observationsReady.complete();
+          await expectLater(
+            comparison,
+            throwsA(isA<ComparisonCancelledException>()),
+          );
+
+          final observations = await repository.getValidObservations(
+            productId: product.id,
+            since: DateTime.now().subtract(const Duration(days: 30)),
+            limit: 10,
+          );
+          expect(observations, isEmpty);
+        },
+      );
     });
   });
 
@@ -289,4 +329,88 @@ void main() {
       );
     });
   });
+}
+
+class _GatedObservationsRepository implements PriceRepository {
+  _GatedObservationsRepository(this._delegate, this._observationsReady);
+
+  final PriceRepository _delegate;
+  final Completer<void> _observationsReady;
+
+  @override
+  Future<ProductIdentity?> findProductByJan(String jan) =>
+      _delegate.findProductByJan(jan);
+
+  @override
+  Future<ProductIdentity> createProvisionalProduct(String jan) =>
+      _delegate.createProvisionalProduct(jan);
+
+  @override
+  Future<List<PriceObservation>> getValidObservations({
+    required String productId,
+    required DateTime since,
+    required int limit,
+  }) async {
+    final observations = await _delegate.getValidObservations(
+      productId: productId,
+      since: since,
+      limit: limit,
+    );
+    await _observationsReady.future;
+    return observations;
+  }
+
+  @override
+  Future<PriceObservation> insertObservation({
+    required String productId,
+    required int priceYen,
+    required double priceConfidence,
+    bool? isSaleVisible,
+    bool? isMemberPriceVisible,
+    bool? isCouponPriceVisible,
+    bool? isBulkDiscount,
+  }) => _delegate.insertObservation(
+    productId: productId,
+    priceYen: priceYen,
+    priceConfidence: priceConfidence,
+    isSaleVisible: isSaleVisible,
+    isMemberPriceVisible: isMemberPriceVisible,
+    isCouponPriceVisible: isCouponPriceVisible,
+    isBulkDiscount: isBulkDiscount,
+  );
+
+  @override
+  Future<bool> isDuplicate({
+    required String productId,
+    required int priceYen,
+    required DateTime observedAt,
+  }) => _delegate.isDuplicate(
+    productId: productId,
+    priceYen: priceYen,
+    observedAt: observedAt,
+  );
+
+  @override
+  Future<PriceObservation> insertObservationWithDate({
+    required String productId,
+    required int priceYen,
+    required double priceConfidence,
+    required DateTime observedAt,
+    bool? isSaleVisible,
+    bool? isMemberPriceVisible,
+    bool? isCouponPriceVisible,
+    bool? isBulkDiscount,
+  }) => _delegate.insertObservationWithDate(
+    productId: productId,
+    priceYen: priceYen,
+    priceConfidence: priceConfidence,
+    observedAt: observedAt,
+    isSaleVisible: isSaleVisible,
+    isMemberPriceVisible: isMemberPriceVisible,
+    isCouponPriceVisible: isCouponPriceVisible,
+    isBulkDiscount: isBulkDiscount,
+  );
+
+  @override
+  void dispose() {}
 }

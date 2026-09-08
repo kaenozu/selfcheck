@@ -1,6 +1,11 @@
 import '../domain/comparison_result.dart';
 import '../infrastructure/price_repository.dart';
 
+/// Raised when a comparison is cancelled before its persistence boundary.
+class ComparisonCancelledException implements Exception {
+  const ComparisonCancelledException();
+}
+
 /// CompareUseCase - compares current price against historical median
 class CompareUseCase {
   final PriceRepository _repository;
@@ -17,6 +22,7 @@ class CompareUseCase {
     required String productId,
     required double currentConfidence,
     bool skipInsert = false,
+    bool Function()? isSessionValid,
   }) async {
     // Fetch historical observations first (before inserting current)
     final since = DateTime.now().subtract(
@@ -27,6 +33,12 @@ class CompareUseCase {
       since: since,
       limit: ComparisonPolicy.maxObservationsForMedian,
     );
+
+    // Cancellation can happen while the historical query is in flight. Check
+    // again at the commit boundary so a cancelled session cannot persist.
+    if (isSessionValid != null && !isSessionValid()) {
+      throw const ComparisonCancelledException();
+    }
 
     // Save current observation (unless caller says it's a duplicate)
     if (!skipInsert) {
