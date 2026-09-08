@@ -196,8 +196,22 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> invalidateObservation(String id) async {
+    final observation = await (select(
+      priceObservations,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (observation == null || !observation.isValid) return;
+
+    // Retain the invalid row for audit/history while freeing the active unique
+    // duplicate slot so a corrected observation can be stored in the same
+    // five-minute bucket. Including the immutable row id keeps this idempotent
+    // and collision-resistant without a schema migration.
+    final retiredDuplicateKey =
+        '${observation.duplicateKey}:invalid:${observation.id}';
     await (update(priceObservations)..where((t) => t.id.equals(id))).write(
-      const PriceObservationsCompanion(isValid: Value(false)),
+      PriceObservationsCompanion(
+        isValid: const Value(false),
+        duplicateKey: Value(retiredDuplicateKey),
+      ),
     );
   }
 
