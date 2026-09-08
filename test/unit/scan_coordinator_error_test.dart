@@ -21,63 +21,69 @@ void main() {
       repository.dispose();
     });
 
-    test('DB failure during compare emits error state, not stuck in comparing',
-        () async {
-      final brokenRepo = _BrokenRepository(repository);
-      final compareUseCase = CompareUseCase(brokenRepo);
+    test(
+      'DB failure during compare emits error state, not stuck in comparing',
+      () async {
+        final brokenRepo = _BrokenRepository(repository);
+        final compareUseCase = CompareUseCase(brokenRepo);
 
-      final barcodeCtrl = StreamController<BarcodeCandidate>();
-      final priceCtrl = StreamController<PriceCandidate>();
+        final barcodeCtrl = StreamController<BarcodeCandidate>();
+        final priceCtrl = StreamController<PriceCandidate>();
 
-      coordinator = ScanCoordinator(
-        repository: brokenRepo,
-        compareUseCase: compareUseCase,
-        barcodeAdapter: _StreamBarcodeAdapter(barcodeCtrl.stream),
-        priceAdapter: _StreamPriceAdapter(priceCtrl.stream),
-      );
+        coordinator = ScanCoordinator(
+          repository: brokenRepo,
+          compareUseCase: compareUseCase,
+          barcodeAdapter: _StreamBarcodeAdapter(barcodeCtrl.stream),
+          priceAdapter: _StreamPriceAdapter(priceCtrl.stream),
+        );
 
-      final states = <ScanState>[];
-      final errors = <String?>[];
-      coordinator.stateStream.listen(states.add);
-      coordinator.errorStream.listen(errors.add);
+        final states = <ScanState>[];
+        final errors = <String?>[];
+        coordinator.stateStream.listen(states.add);
+        coordinator.errorStream.listen(errors.add);
 
-      coordinator.startScan();
+        coordinator.startScan();
 
-      // Emit barcode first → enters waitingPrice
-      barcodeCtrl.add(const BarcodeCandidate(
-        barcode: '4901234567890',
-        format: BarcodeFormat.ean13,
-        confidence: 0.95,
-        region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-      ));
-      await Future.delayed(const Duration(milliseconds: 20));
-      expect(states.last, ScanState.waitingPrice);
-
-      // Now emit 3 identical prices → stabilizer triggers → _compare called
-      for (var i = 0; i < 3; i++) {
-        priceCtrl.add(const PriceCandidate(
-          priceYen: 398,
-          confidence: 0.9,
-          region: Rect(left: 0, top: 50, right: 100, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        // Emit barcode first → enters waitingPrice
+        barcodeCtrl.add(
+          const BarcodeCandidate(
+            barcode: '4901234567890',
+            format: BarcodeFormat.ean13,
+            confidence: 0.95,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 20));
-      }
+        expect(states.last, ScanState.waitingPrice);
 
-      await Future.delayed(const Duration(milliseconds: 200));
+        // Now emit 3 identical prices → stabilizer triggers → _compare called
+        for (var i = 0; i < 3; i++) {
+          priceCtrl.add(
+            const PriceCandidate(
+              priceYen: 398,
+              confidence: 0.9,
+              region: Rect(left: 0, top: 50, right: 100, bottom: 100),
+              rawTexts: ['398'],
+            ),
+          );
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
 
-      // Should end up in error state
-      expect(states, contains(ScanState.error));
-      expect(states, isNot(contains(ScanState.result)));
-      expect(errors, isNotEmpty);
-      expect(errors.last, isNotNull);
-      // Error message is user-friendly (e.g. "ストレージ容量が不足しています。")
-      expect(errors.last, isNot(contains('Exception')));
-      expect(errors.last, isNot(contains('disk full')));
+        await Future.delayed(const Duration(milliseconds: 200));
 
-      await barcodeCtrl.close();
-      await priceCtrl.close();
-    });
+        // Should end up in error state
+        expect(states, contains(ScanState.error));
+        expect(states, isNot(contains(ScanState.result)));
+        expect(errors, isNotEmpty);
+        expect(errors.last, isNotNull);
+        // Error message is user-friendly (e.g. "ストレージ容量が不足しています。")
+        expect(errors.last, isNot(contains('Exception')));
+        expect(errors.last, isNot(contains('disk full')));
+
+        await barcodeCtrl.close();
+        await priceCtrl.close();
+      },
+    );
 
     test('startScan works from error state (retry)', () async {
       // First attempt: broken repo
@@ -96,17 +102,24 @@ void main() {
       coordinator.stateStream.listen(states1.add);
 
       coordinator.startScan();
-      barcodeCtrl1.add(const BarcodeCandidate(
-        barcode: '4901234567890', format: BarcodeFormat.ean13,
-        confidence: 0.95, region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-      ));
+      barcodeCtrl1.add(
+        const BarcodeCandidate(
+          barcode: '4901234567890',
+          format: BarcodeFormat.ean13,
+          confidence: 0.95,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+        ),
+      );
       await Future.delayed(const Duration(milliseconds: 20));
       for (var i = 0; i < 3; i++) {
-        priceCtrl1.add(const PriceCandidate(
-          priceYen: 398, confidence: 0.9,
-          region: Rect(left: 0, top: 50, right: 100, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        priceCtrl1.add(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 50, right: 100, bottom: 100),
+            rawTexts: ['398'],
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 20));
       }
       await Future.delayed(const Duration(milliseconds: 200));
@@ -131,17 +144,24 @@ void main() {
       coordinator2.stateStream.listen(states2.add);
 
       coordinator2.startScan();
-      barcodeCtrl2.add(const BarcodeCandidate(
-        barcode: '4901234567890', format: BarcodeFormat.ean13,
-        confidence: 0.95, region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-      ));
+      barcodeCtrl2.add(
+        const BarcodeCandidate(
+          barcode: '4901234567890',
+          format: BarcodeFormat.ean13,
+          confidence: 0.95,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+        ),
+      );
       await Future.delayed(const Duration(milliseconds: 20));
       for (var i = 0; i < 3; i++) {
-        priceCtrl2.add(const PriceCandidate(
-          priceYen: 398, confidence: 0.9,
-          region: Rect(left: 0, top: 50, right: 100, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        priceCtrl2.add(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 50, right: 100, bottom: 100),
+            rawTexts: ['398'],
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 20));
       }
       await Future.delayed(const Duration(milliseconds: 200));
@@ -179,49 +199,59 @@ void main() {
       expect(coordinator.currentState, ScanState.scanning);
 
       await errorController.close();
-    });    test('lastError is set after failure and cleared on next scan start',
-        () async {
-      final brokenRepo = _BrokenRepository(repository);
-      final compareUseCase = CompareUseCase(brokenRepo);
-
-      final barcodeCtrl = StreamController<BarcodeCandidate>.broadcast();
-      final priceCtrl = StreamController<PriceCandidate>.broadcast();
-
-      coordinator = ScanCoordinator(
-        repository: brokenRepo,
-        compareUseCase: compareUseCase,
-        barcodeAdapter: _StreamBarcodeAdapter(barcodeCtrl.stream),
-        priceAdapter: _StreamPriceAdapter(priceCtrl.stream),
-      );
-
-      coordinator.startScan();
-      barcodeCtrl.add(const BarcodeCandidate(
-        barcode: '4901234567890', format: BarcodeFormat.ean13,
-        confidence: 0.95, region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-      ));
-      await Future.delayed(const Duration(milliseconds: 20));
-      for (var i = 0; i < 3; i++) {
-        priceCtrl.add(const PriceCandidate(
-          priceYen: 398, confidence: 0.9,
-          region: Rect(left: 0, top: 50, right: 100, bottom: 100),
-          rawTexts: ['398'],
-        ));
-        await Future.delayed(const Duration(milliseconds: 20));
-      }
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // After failure, lastError should be set
-      expect(coordinator.lastError, isNotNull);
-      expect(coordinator.lastError, isNot(contains('Exception')));
-      expect(coordinator.currentState, ScanState.error);
-
-      // Starting a new scan clears lastError
-      coordinator.startScan();
-      expect(coordinator.lastError, isNull);
-
-      await barcodeCtrl.close();
-      await priceCtrl.close();
     });
+    test(
+      'lastError is set after failure and cleared on next scan start',
+      () async {
+        final brokenRepo = _BrokenRepository(repository);
+        final compareUseCase = CompareUseCase(brokenRepo);
+
+        final barcodeCtrl = StreamController<BarcodeCandidate>.broadcast();
+        final priceCtrl = StreamController<PriceCandidate>.broadcast();
+
+        coordinator = ScanCoordinator(
+          repository: brokenRepo,
+          compareUseCase: compareUseCase,
+          barcodeAdapter: _StreamBarcodeAdapter(barcodeCtrl.stream),
+          priceAdapter: _StreamPriceAdapter(priceCtrl.stream),
+        );
+
+        coordinator.startScan();
+        barcodeCtrl.add(
+          const BarcodeCandidate(
+            barcode: '4901234567890',
+            format: BarcodeFormat.ean13,
+            confidence: 0.95,
+            region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 20));
+        for (var i = 0; i < 3; i++) {
+          priceCtrl.add(
+            const PriceCandidate(
+              priceYen: 398,
+              confidence: 0.9,
+              region: Rect(left: 0, top: 50, right: 100, bottom: 100),
+              rawTexts: ['398'],
+            ),
+          );
+          await Future.delayed(const Duration(milliseconds: 20));
+        }
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // After failure, lastError should be set
+        expect(coordinator.lastError, isNotNull);
+        expect(coordinator.lastError, isNot(contains('Exception')));
+        expect(coordinator.currentState, ScanState.error);
+
+        // Starting a new scan clears lastError
+        coordinator.startScan();
+        expect(coordinator.lastError, isNull);
+
+        await barcodeCtrl.close();
+        await priceCtrl.close();
+      },
+    );
 
     test('error message is user-friendly, not raw exception text', () async {
       final brokenRepo = _BrokenRepository(repository);
@@ -241,17 +271,24 @@ void main() {
       coordinator.errorStream.listen(errors.add);
 
       coordinator.startScan();
-      barcodeCtrl.add(const BarcodeCandidate(
-        barcode: '4901234567890', format: BarcodeFormat.ean13,
-        confidence: 0.95, region: Rect(left: 0, top: 0, right: 100, bottom: 50),
-      ));
+      barcodeCtrl.add(
+        const BarcodeCandidate(
+          barcode: '4901234567890',
+          format: BarcodeFormat.ean13,
+          confidence: 0.95,
+          region: Rect(left: 0, top: 0, right: 100, bottom: 50),
+        ),
+      );
       await Future.delayed(const Duration(milliseconds: 20));
       for (var i = 0; i < 3; i++) {
-        priceCtrl.add(const PriceCandidate(
-          priceYen: 398, confidence: 0.9,
-          region: Rect(left: 0, top: 50, right: 100, bottom: 100),
-          rawTexts: ['398'],
-        ));
+        priceCtrl.add(
+          const PriceCandidate(
+            priceYen: 398,
+            confidence: 0.9,
+            region: Rect(left: 0, top: 50, right: 100, bottom: 100),
+            rawTexts: ['398'],
+          ),
+        );
         await Future.delayed(const Duration(milliseconds: 20));
       }
       await Future.delayed(const Duration(milliseconds: 200));
@@ -295,7 +332,10 @@ class _BrokenRepository implements PriceRepository {
     required DateTime since,
     required int limit,
   }) => _inner.getValidObservations(
-      productId: productId, since: since, limit: limit);
+    productId: productId,
+    since: since,
+    limit: limit,
+  );
 
   @override
   Future<PriceObservation> insertObservation({

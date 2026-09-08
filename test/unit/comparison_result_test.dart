@@ -38,38 +38,91 @@ void main() {
 
   group('ComparisonPolicy', () {
     test('labelForDiffRate returns veryCheap for <= -10%', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.15), domain.ComparisonLabel.veryCheap);
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.20), domain.ComparisonLabel.veryCheap);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.15),
+        domain.ComparisonLabel.veryCheap,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.20),
+        domain.ComparisonLabel.veryCheap,
+      );
     });
 
     test('labelForDiffRate returns cheap for -10% to -5%', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.10), domain.ComparisonLabel.veryCheap);
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.07), domain.ComparisonLabel.cheap);
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.05), domain.ComparisonLabel.cheap);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.10),
+        domain.ComparisonLabel.veryCheap,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.07),
+        domain.ComparisonLabel.cheap,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.05),
+        domain.ComparisonLabel.cheap,
+      );
     });
 
     test('labelForDiffRate returns normal for -5% to +5%', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(-0.04), domain.ComparisonLabel.normal);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.0), domain.ComparisonLabel.normal);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.04), domain.ComparisonLabel.normal);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(-0.04),
+        domain.ComparisonLabel.normal,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.0),
+        domain.ComparisonLabel.normal,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.04),
+        domain.ComparisonLabel.normal,
+      );
     });
 
     test('labelForDiffRate returns slightlyExpensive for +5% to < +10%', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.05), domain.ComparisonLabel.slightlyExpensive);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.07), domain.ComparisonLabel.slightlyExpensive);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.05),
+        domain.ComparisonLabel.slightlyExpensive,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.07),
+        domain.ComparisonLabel.slightlyExpensive,
+      );
     });
 
     test('labelForDiffRate returns expensive for >= +10%', () {
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.10), domain.ComparisonLabel.expensive);
-      expect(domain.ComparisonPolicy.labelForDiffRate(0.15), domain.ComparisonLabel.expensive);
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.10),
+        domain.ComparisonLabel.expensive,
+      );
+      expect(
+        domain.ComparisonPolicy.labelForDiffRate(0.15),
+        domain.ComparisonLabel.expensive,
+      );
     });
 
     test('labelText returns correct Japanese text', () {
-      expect(domain.ComparisonPolicy.labelText(domain.ComparisonLabel.veryCheap), 'かなり安い');
-      expect(domain.ComparisonPolicy.labelText(domain.ComparisonLabel.cheap), '安い');
-      expect(domain.ComparisonPolicy.labelText(domain.ComparisonLabel.normal), 'いつも通り');
-      expect(domain.ComparisonPolicy.labelText(domain.ComparisonLabel.slightlyExpensive), '少し高い');
-      expect(domain.ComparisonPolicy.labelText(domain.ComparisonLabel.expensive), '高い');
+      expect(
+        domain.ComparisonPolicy.labelText(domain.ComparisonLabel.veryCheap),
+        'かなり安い',
+      );
+      expect(
+        domain.ComparisonPolicy.labelText(domain.ComparisonLabel.cheap),
+        '安い',
+      );
+      expect(
+        domain.ComparisonPolicy.labelText(domain.ComparisonLabel.normal),
+        'いつも通り',
+      );
+      expect(
+        domain.ComparisonPolicy.labelText(
+          domain.ComparisonLabel.slightlyExpensive,
+        ),
+        '少し高い',
+      );
+      expect(
+        domain.ComparisonPolicy.labelText(domain.ComparisonLabel.expensive),
+        '高い',
+      );
     });
   });
 }

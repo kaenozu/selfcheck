@@ -20,32 +20,36 @@ class PriceContextBadges extends StatelessWidget {
     final badges = <_BadgeData>[];
 
     if (isSaleVisible == true) {
-      badges.add(_BadgeData(
-        label: 'SALE',
-        icon: Icons.local_offer,
-        color: Colors.red,
-      ));
+      badges.add(
+        _BadgeData(label: 'SALE', icon: Icons.local_offer, color: Colors.red),
+      );
     }
     if (isMemberPriceVisible == true) {
-      badges.add(_BadgeData(
-        label: '会員価格',
-        icon: Icons.card_membership,
-        color: Colors.blue,
-      ));
+      badges.add(
+        _BadgeData(
+          label: '会員価格',
+          icon: Icons.card_membership,
+          color: Colors.blue,
+        ),
+      );
     }
     if (isCouponPriceVisible == true) {
-      badges.add(_BadgeData(
-        label: 'クーポン',
-        icon: Icons.confirmation_number,
-        color: Colors.orange,
-      ));
+      badges.add(
+        _BadgeData(
+          label: 'クーポン',
+          icon: Icons.confirmation_number,
+          color: Colors.orange,
+        ),
+      );
     }
     if (isBulkDiscount == true) {
-      badges.add(_BadgeData(
-        label: 'まとめ割',
-        icon: Icons.inventory_2,
-        color: Colors.purple,
-      ));
+      badges.add(
+        _BadgeData(
+          label: 'まとめ割',
+          icon: Icons.inventory_2,
+          color: Colors.purple,
+        ),
+      );
     }
 
     if (badges.isEmpty) return const SizedBox.shrink();

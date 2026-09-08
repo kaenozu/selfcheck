@@ -6,9 +6,7 @@ void main() {
   testWidgets('PriceContextBadges smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: PriceContextBadges(isSaleVisible: true),
-        ),
+        home: Scaffold(body: PriceContextBadges(isSaleVisible: true)),
       ),
     );
     await tester.pump();

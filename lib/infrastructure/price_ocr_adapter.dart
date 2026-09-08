@@ -7,7 +7,7 @@ import 'barcode_recognizer_adapter.dart';
 abstract interface class PriceOCRAdapter {
   /// フレームから価格候補リストを返す
   Future<List<PriceCandidate>> extractPrices(CameraFrame frame);
-  
+
   /// アダプターを解放する
   void dispose();
 }
