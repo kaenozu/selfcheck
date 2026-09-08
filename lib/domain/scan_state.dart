@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 /// スキャン状態
 enum ScanState {
   idle, // カメラ起動待ち
@@ -101,4 +103,36 @@ class Rect {
 
   double get width => right - left;
   double get height => bottom - top;
+
+  /// Minimum edge-to-edge distance between two image regions.
+  double distanceTo(Rect other) {
+    final horizontal = other.left > right
+        ? other.left - right
+        : left > other.right
+        ? left - other.right
+        : 0.0;
+    final vertical = other.top > bottom
+        ? other.top - bottom
+        : top > other.bottom
+        ? top - other.bottom
+        : 0.0;
+    return math.sqrt(horizontal * horizontal + vertical * vertical);
+  }
+}
+
+/// Returns true only when the OCR price is spatially attributable to the JAN.
+///
+/// A price may touch/overlap the barcode label or be nearby on the same label,
+/// but a large gap is unsafe because another product can be between the two.
+bool regionsAreSafelyAssociated(Rect barcode, Rect price) {
+  if (barcode.width <= 0 ||
+      barcode.height <= 0 ||
+      price.width <= 0 ||
+      price.height <= 0) {
+    return false;
+  }
+  final maxBarcodeExtent = barcode.width > barcode.height
+      ? barcode.width
+      : barcode.height;
+  return barcode.distanceTo(price) <= maxBarcodeExtent * 1.5;
 }

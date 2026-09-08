@@ -129,6 +129,39 @@ void main() {
       expect(coordinator.currentState, ScanState.waitingPrice);
       expect(await repository.findProductByJan(_barcode.barcode), isNull);
     });
+
+    test(
+      'does not save a stable price from a different product region',
+      () async {
+        coordinator.startScan();
+
+        barcodeAdapter.add(_barcode);
+        await _flush();
+        expect(coordinator.currentState, ScanState.waitingPrice);
+
+        const unrelatedRegion = Rect(
+          left: 600,
+          top: 600,
+          right: 700,
+          bottom: 650,
+        );
+        for (var i = 0; i < 3; i++) {
+          priceAdapter.add(
+            const PriceCandidate(
+              priceYen: 999,
+              confidence: 0.9,
+              region: unrelatedRegion,
+              rawTexts: ['¥999'],
+            ),
+          );
+          await _flush();
+        }
+
+        await _flush(100);
+        expect(coordinator.currentState, isNot(ScanState.result));
+        expect(await repository.findProductByJan(_barcode.barcode), isNull);
+      },
+    );
   });
 }
 

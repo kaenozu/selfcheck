@@ -134,7 +134,10 @@ class ScanCoordinator {
     _priceAdapter.pause();
 
     final stablePrice = _stabilizer.stablePrice;
-    if (stablePrice != null) {
+    final stableCandidate = _stabilizer.stableCandidate;
+    if (stablePrice != null &&
+        stableCandidate != null &&
+        regionsAreSafelyAssociated(barcode.region, stableCandidate.region)) {
       unawaited(
         _compare(
           barcode,
@@ -147,6 +150,9 @@ class ScanCoordinator {
     }
 
     _pendingBarcode = barcode;
+    if (stablePrice != null) {
+      _stabilizer.reset();
+    }
     _state = ScanState.waitingPrice;
     _stateController.add(_state);
     _priceAdapter.resume();
@@ -165,6 +171,18 @@ class ScanCoordinator {
     _priceAdapter.pause();
 
     if (_state == ScanState.waitingPrice && _pendingBarcode != null) {
+      final stableCandidate = _stabilizer.stableCandidate;
+      if (stableCandidate == null ||
+          !regionsAreSafelyAssociated(
+            _pendingBarcode!.region,
+            stableCandidate.region,
+          )) {
+        // Keep the JAN pending, but discard this stable value. Saving an
+        // unrelated product's price under the JAN is worse than retrying.
+        _stabilizer.reset();
+        _priceAdapter.resume();
+        return;
+      }
       await _compare(
         _pendingBarcode!,
         _stabilizer.stablePrice!,
