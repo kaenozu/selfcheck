@@ -11,6 +11,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import '../application/scan_coordinator.dart';
 import '../domain/scan_state.dart';
 import 'price_text_parser.dart';
+import 'recognition_failure_policy.dart';
 
 /// Owns the live camera and on-device ML Kit recognizers.
 ///
@@ -43,6 +44,8 @@ class CameraRecognitionPipeline extends ChangeNotifier {
   bool _cameraActive = true;
   int _cameraGeneration = 0;
   Object? _initializationError;
+  final RecognitionFailurePolicy _recognitionFailurePolicy =
+      RecognitionFailurePolicy();
   DateTime _lastProcessed = DateTime.fromMillisecondsSinceEpoch(0);
 
   Stream<BarcodeCandidate> get barcodeResults => _barcodeResults.stream;
@@ -177,6 +180,7 @@ class CameraRecognitionPipeline extends ChangeNotifier {
     }
     _lastProcessed = now;
     _processing = true;
+    var frameFailed = false;
     try {
       final inputImage = _toInputImage(image);
       if (inputImage == null || !_isCurrentCameraOperation(generation)) {
@@ -222,10 +226,37 @@ class CameraRecognitionPipeline extends ChangeNotifier {
         }
       }
     } on Object catch (error, stackTrace) {
+      frameFailed = true;
       debugPrint('CameraRecognitionPipeline frame failed: $error');
       debugPrint('$stackTrace');
+      final shouldNotify = _recognitionFailurePolicy.recordFailure(
+        fatal: _isFatalRecognitionError(error),
+      );
+      if (shouldNotify) {
+        _publishRecognitionError(error, stackTrace);
+      }
     } finally {
+      if (!frameFailed) {
+        _recognitionFailurePolicy.recordSuccess();
+      }
       _processing = false;
+    }
+  }
+
+  bool _isFatalRecognitionError(Object error) {
+    if (error is CameraException) {
+      return error.code == 'CameraAccessDenied' ||
+          error.code == 'CameraAccessDeniedWithoutPrompt';
+    }
+    return false;
+  }
+
+  void _publishRecognitionError(Object error, StackTrace stackTrace) {
+    if (_barcodeEnabled && !_barcodeResults.isClosed) {
+      _barcodeResults.addError(error, stackTrace);
+    }
+    if (_priceEnabled && !_priceResults.isClosed) {
+      _priceResults.addError(error, stackTrace);
     }
   }
 
