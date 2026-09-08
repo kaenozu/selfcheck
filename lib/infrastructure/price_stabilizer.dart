@@ -6,6 +6,7 @@ class PriceStabilizer {
   int? _currentPrice;
   double _confidence = 0.0;
   int? _stablePrice;
+  PriceCandidate? _stableCandidate;
   double _stableConfidence = 0.0;
 
   /// Submit a price candidate and return true if stable.
@@ -26,6 +27,7 @@ class PriceStabilizer {
     // Need at least 3 readings before a value can be considered stable.
     if (_history.length < 3) {
       _stablePrice = null;
+      _stableCandidate = null;
       _stableConfidence = 0.0;
       return false;
     }
@@ -35,9 +37,11 @@ class PriceStabilizer {
 
     if (isStable) {
       _stablePrice = last3.first;
+      _stableCandidate = candidate;
       _stableConfidence = candidate.confidence;
     } else {
       _stablePrice = null;
+      _stableCandidate = null;
       _stableConfidence = 0.0;
     }
 
@@ -56,11 +60,15 @@ class PriceStabilizer {
   /// Confidence associated with [stablePrice].
   double get stableConfidence => _stableConfidence;
 
+  /// Candidate, including its image region, that produced [stablePrice].
+  PriceCandidate? get stableCandidate => _stableCandidate;
+
   void reset() {
     _history.clear();
     _currentPrice = null;
     _confidence = 0.0;
     _stablePrice = null;
+    _stableCandidate = null;
     _stableConfidence = 0.0;
   }
 }
