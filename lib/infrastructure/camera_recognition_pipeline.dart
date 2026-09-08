@@ -25,7 +25,7 @@ class CameraRecognitionPipeline extends ChangeNotifier {
           ml_barcode.BarcodeFormat.ean8,
         ],
       ),
-      _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+      _textRecognizer = TextRecognizer(script: TextRecognitionScript.japanese);
 
   final ml_barcode.BarcodeScanner _barcodeScanner;
   final TextRecognizer _textRecognizer;

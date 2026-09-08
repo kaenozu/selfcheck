@@ -25,6 +25,10 @@ if (releaseTaskRequested && !releaseSigningConfigured) {
     )
 }
 
+dependencies {
+    implementation("com.google.mlkit:text-recognition-japanese:16.0.1")
+}
+
 android {
     namespace = "com.selfcheck.selfcheck_jibun_check"
     compileSdk = flutter.compileSdkVersion
